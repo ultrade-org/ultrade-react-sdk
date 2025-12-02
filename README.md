@@ -4,10 +4,11 @@ Redux Toolkit Query adaptor for @ultrade/ultrade-js-sdk. Provides RTK Query endp
 
 **Repository:** [https://github.com/ultrade-org/ultrade-react-sdk](https://github.com/ultrade-org/ultrade-react-sdk)
 
+**SDK Repository:** [https://github.com/ultrade-org/ultrade-js-sdk](https://github.com/ultrade-org/ultrade-js-sdk)
+
 ## Package Info
 
 - **Name:** `@ultrade/react-sdk`
-- **Purpose:** Bridge between Redux Toolkit Query and Ultrade SDK
 - **Main Entry:** `./dist/index.js`
 - **Types:** `./dist/index.d.ts`
 
@@ -25,37 +26,6 @@ yarn add @ultrade/react-sdk
 
 ```bash
 pnpm add @ultrade/react-sdk
-```
-
-## TypeScript Configuration
-
-For proper type resolution and convenient development, you need to configure your `tsconfig.json` correctly.
-
-### Recommended Configuration
-
-The configuration should be able to resolve types that account for the `exports` field in `package.json`:
-
-```json
-{
-  "compilerOptions": {
-    "moduleResolution": "nodenext"
-    // Alternative options: "node16" or "bundler"
-  }
-}
-```
-
-### Alternative: Manual Path Configuration
-
-If you cannot change your TypeScript settings, you can explicitly specify paths:
-
-```json
-{
-  "compilerOptions": {
-    "paths": {
-      "@ultrade/shared/browser/*": ["../shared/dist/browser/*"]
-    }
-  }
-}
 ```
 
 ## Structure
@@ -120,65 +90,92 @@ Defined in `tsconfig.alias.json`:
 | `@interfaces` | `./src/interfaces/index.ts` | TypeScript interfaces |
 | `@utils` | `./src/utils/index.ts` | Utility functions |
 
-## Usage Example
+### Creating RTK SDK Client
 
 ```typescript
-import { marketsPairsApi, walletApi } from '@ultrade/react-sdk';
+import RTKSDKAdaptor from '@ultrade/react-sdk';
+import algosdk from 'algosdk';
 
-// Use in React component
-function TradingComponent() {
-  const { data: pairs } = marketsPairsApi.useGetPairListQuery({ companyId: 1 });
-  const { data: transactions } = walletApi.useGetWalletTransactionsQuery({ 
-    type: 'DEPOSIT',
-    page: 1,
-    limit: 50
-  });
+// Create Algorand SDK client
+const rtkAlgodClient = new algosdk.Algodv2(
+  '', // token
+  'https://testnet-api.algonode.cloud', // server
+  '' // port
+);
 
-  return (
-    <div>
-      {/* Render data */}
-    </div>
-  );
+// Initialize RTK SDK client (extends Client from @ultrade/ultrade-js-sdk)
+const rtkSdkClient = new RTKSDKAdaptor({
+  network: 'testnet', // or 'mainnet'
+  apiUrl: 'https://api.testnet.ultrade.org',
+  algoSdkClient: rtkAlgodClient,
+  websocketUrl: 'wss://ws.testnet.ultrade.org',
+});
+
+// Set signer (same as base SDK)
+rtkSdkClient.setSigner({
+  signMessage,
+  signMessageByToken
+});
+```
+
+### Redux Store Setup
+
+```typescript
+import { SDKReducers, SDKMiddlewares } from '@ultrade/react-sdk';
+
+export const store = configureStore({
+  reducer: {
+    // ... your other reducers
+    ...SDKReducers
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(SDKMiddlewares)
+});
+
+```
+
+### Using RTK Query Hooks
+
+```typescript
+import { useAppSelector } from './hooks';
+import { useEffect } from 'react';
+
+function Component() {
+  //...
+
+  const { useLazyGetSettingsQuery, useLazyGetPairListQuery } = rtkSdkClient.markets();
+  const { useGetTradingKeysQuery, useAddTradingKeyMutation } = rtkSdkClient.walletApi();
+  
+  // Lazy query for settings
+  const [getSettings, { data: settings, isLoading: isLoadingSettings }] = useLazyGetSettingsQuery();
+  
+  // Query for trading pairs
+  const [getPairList, { data: pairs, isLoading: isLoadingPairs }] = useLazyGetPairListQuery();
+  
+  // Query for trading keys
+  const { data: tradingKeys, isLoading: isLoadingKeys } = useGetTradingKeysQuery();
+  
+  // Mutation for creating trading key
+  const [addTradingKey, { isLoading: isCreatingKey }] = useAddTradingKeyMutation();
+  
+  return <></>
 }
 ```
 
-## Build Commands
+## Redux integration
 
-**Important:** First install node_modules from monorepo root (npm_packages)
+```typescript
+import { Provider } from 'react-redux';
+import { store } from './store';
 
-- `npm run build` - Production build
-- `npm run dev` - Development build with watch mode
+function App() {
+  
+  //component logic
 
-## Key Features
-
-1. **Type-Safe RTK Query Endpoints** - All endpoints use SDK argument interfaces
-2. **Cache Management** - Automatic cache invalidation with tags
-3. **WebSocket Integration** - Real-time updates through WebSocket handlers
-4. **Error Handling** - Centralized error handling with `withErrorHandling`
-5. **SDK Client Singleton** - Single SDK client instance via `getSdkClient()`
-
-## Cache Tags
-
-All endpoints use cache tags for automatic invalidation:
-
-- `markets_balances` - Balance data
-- `markets_settings` - Market settings
-- `markets_depth` - Order book depth
-- `markets_history` - Historical candles
-- `markets_orders` - User orders
-- `markets_pair_list` - Trading pairs
-- `markets_last_trades` - Recent trades
-- `wallet_transactions` - Wallet transactions
-- `wallet_transfers` - Transfer history
-- `wallet_whitelist` - Withdrawal whitelist
-- `wallet_trading_keys` - Trading keys
-- `wallet_pending_transactions` - Pending transactions
-- `withdrawal_wallets` - Withdrawal wallets
-
-## Dependencies
-
-- **Peer Dependencies:**
-  - `@reduxjs/toolkit`
-  - `react-redux`
-  - `@ultrade/ultrade-js-sdk`
-  - `@ultrade/shared`
+  return (
+    <Provider store={store}>
+      <YourApp />
+    </Provider>
+  );
+}
+```
