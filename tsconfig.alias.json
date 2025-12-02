@@ -1,0 +1,56 @@
+{
+  "extends": "./tsconfig.json",
+  "references": [
+    {
+      "path": "./tsconfig.json"
+    }
+  ],
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "composite": true,
+    "declaration": true,
+    "declarationDir": "./dist",
+    "emitDeclarationOnly": true,
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "outDir": "./dist",
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@api/*": [
+        "./src/api/*"
+      ],
+      "@api": [
+        "./src/api/index.ts"
+      ],
+      "@consts": [
+        "./src/consts/index.ts"
+      ],
+      "@ultrade/shared/browser/*": [
+        "../shared/dist/browser/*"
+      ],
+      "@interfaces": [
+        "./src/interfaces/index.ts"
+      ],
+      "@utils": [
+        "./src/utils/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "cypress",
+    "public",
+    "esbuild.config.ts"
+  ]
+}
