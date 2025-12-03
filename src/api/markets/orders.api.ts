@@ -1,6 +1,6 @@
 import {
   IGetOrdersArgs,
-  ICreateOrderArgs,
+  CreateSpotOrderArgs,
   ICancelOrderArgs,
   IGetOrderByIdArgs,
   ICancelMultipleOrdersArgs,
@@ -24,10 +24,10 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
         { type: 'markets_orders', id: createValidatedTag([symbol, status, startTime, endTime, limit]) }
       ]
     }),
-    createOrder: builder.mutation<IOrderDto, ICreateOrderArgs>({
-      queryFn: async (data: ICreateOrderArgs): IQueryFuncResult<IOrderDto> => {
+    createSpotOrder: builder.mutation<IOrderDto, CreateSpotOrderArgs>({
+      queryFn: async (data: CreateSpotOrderArgs): IQueryFuncResult<IOrderDto> => {
         const client = getSdkClient();
-        return await withErrorHandling(() => client.createOrder(data));
+        return await withErrorHandling(() => client.createSpotOrder(data));
       },
       invalidatesTags: [{ type: 'markets_orders'}],
     }),
