@@ -26,6 +26,15 @@
       "@api/*": [
         "./src/api/*"
       ],
+      "@redux/helpers": [
+        "./src/utils/redux/helpers/index.ts"
+      ],
+      "@interface": [
+        "./src/interface/index.ts"
+      ],
+      "@hooks": [
+        "./src/hooks/index.ts"
+      ],
       "@api": [
         "./src/api/index.ts"
       ],

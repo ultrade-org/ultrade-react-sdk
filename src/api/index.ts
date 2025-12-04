@@ -1,35 +1,10 @@
-import { Client } from '@ultrade/ultrade-js-sdk';
-import { AuthCredentials, ClientOptions } from '@ultrade/ultrade-js-sdk';
+import RTKSDKAdaptor from '@api/sdk';
+import baseApi from '@api/base.api';
 
-import baseApi from './base.api';
-import { setSdkClient } from '@utils';
-import { withdrawalWalletsApi } from '@api/withdrawalWallets.api';
-import { marketsApi } from '@api/markets';
-import { walletApi } from '@api/wallet.api';
+export { withdrawalWalletsApi } from '@api/withdrawalWallets.api';
+export { marketsApi } from '@api/markets';
+export { walletApi } from '@api/wallet.api';
 
-export default class RtkSdkAdaptor extends Client {
-  constructor(
-    options: ClientOptions,
-    authCredentials?: AuthCredentials
-  ) {
-    super(options, authCredentials);
-    setSdkClient(this);
-  }
+export { baseApi }
 
-  withdrawalWallets(): typeof withdrawalWalletsApi {
-    return withdrawalWalletsApi
-  }
-
-  markets(): typeof marketsApi {
-    return marketsApi
-  }
-  walletApi(): typeof walletApi {
-    return walletApi
-  }
-}
-
-export {
-  baseApi,
-}
-
-export * from '../hooks';
+export default RTKSDKAdaptor;

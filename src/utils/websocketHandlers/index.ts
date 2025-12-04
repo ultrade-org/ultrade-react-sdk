@@ -10,5 +10,5 @@ export { handleSettingsUpdate } from './settingsHandlers';
 export type { SettingsUpdateEvent } from './settingsHandlers';
 
 // Depth handlers
-export { handleDepthUpdate } from './depthHandlers';
-export type { DepthUpdateEvent } from './depthHandlers';
+// export { handleDepthUpdate } from './depthHandlers';
+// export type { DepthUpdateEvent } from './depthHandlers';
