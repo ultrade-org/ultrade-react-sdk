@@ -5,4 +5,5 @@ if(!process.env?.REACT_APP_API_URL){
 export const RTK_REDUCER_PATH = 'sdk-rtk';
 export const API_HOST = process.env.REACT_APP_API_URL;
 
+export * from './redux';
 export { composedTags } from './rtkTags';

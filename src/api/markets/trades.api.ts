@@ -1,7 +1,9 @@
 import { IGetLastTradesArgs, IGetLastTrades } from "@ultrade/ultrade-js-sdk";
 
-import { IQueryFuncResult, getSdkClient, withErrorHandling } from "@utils";
+import { IQueryFuncResult, getSdkClient } from "@utils";
 import baseApi from "../base.api";
+import { withErrorHandling } from '@helpers';
+
 
 export const marketsTradesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

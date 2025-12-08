@@ -1,7 +1,8 @@
 import { IGetHistoryArgs, IGetHistoryResponse } from "@ultrade/ultrade-js-sdk";
 
-import { IQueryFuncResult, createValidatedTag, getSdkClient, withErrorHandling } from "@utils";
+import { IQueryFuncResult, createValidatedTag, getSdkClient } from "@utils";
 import baseApi from "../base.api";
+import { withErrorHandling } from '@helpers';
 
 export const marketsHistoryApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

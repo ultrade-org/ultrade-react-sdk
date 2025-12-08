@@ -10,7 +10,8 @@ import {
   ICancelMultipleOrdersResponse,
 } from "@ultrade/ultrade-js-sdk";
 
-import { IQueryFuncResult, createValidatedTag, getSdkClient, withErrorHandling } from "@utils";
+import { IQueryFuncResult, createValidatedTag, getSdkClient } from "@utils";
+import { withErrorHandling } from '@helpers';
 import baseApi from "../base.api";
 
 export const marketsOrdersApi = baseApi.injectEndpoints({

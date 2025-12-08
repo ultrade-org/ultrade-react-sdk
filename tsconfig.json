@@ -22,23 +22,20 @@
       "node"
     ],
     "paths": {
-      "@ultrade/shared/browser/*": [
-        "../shared/dist/browser/*"
-      ],
-      "@redux/helpers": [
-        "./src/utils/redux/helpers/index.ts"
+      "@helpers":[
+        "./src/helpers/index.ts"
       ],
       "@interface": [
         "./src/interface/index.ts"
       ],
+      "@api": [
+        "./src/api/index.ts"
+      ],
       "@api/*": [
         "./src/api/*"
       ],
-      "@hooks": [
-        "./src/hooks/index.ts"
-      ],
-      "@api": [
-        "./src/api/index.ts"
+      "@redux": [
+        "./src/redux/index.ts"
       ],
       "@consts": [
         "./src/consts/index.ts"
@@ -48,6 +45,9 @@
       ],
       "@utils": [
         "./src/utils/index.ts"
+      ],
+      "@ultrade/shared/browser/*": [
+        "../shared/dist/browser/*"
       ]
     }
   },

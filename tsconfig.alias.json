@@ -26,29 +26,26 @@
       "@api/*": [
         "./src/api/*"
       ],
-      "@redux/helpers": [
-        "./src/utils/redux/helpers/index.ts"
+      "@api": [
+        "./src/api/index.ts"
+      ],
+      "@helpers":[
+        "./src/helpers/index.ts"
       ],
       "@interface": [
         "./src/interface/index.ts"
       ],
-      "@hooks": [
-        "./src/hooks/index.ts"
-      ],
-      "@api": [
-        "./src/api/index.ts"
-      ],
       "@consts": [
         "./src/consts/index.ts"
-      ],
-      "@ultrade/shared/browser/*": [
-        "../shared/dist/browser/*"
       ],
       "@interfaces": [
         "./src/interfaces/index.ts"
       ],
       "@utils": [
         "./src/utils/index.ts"
+      ],
+      "@ultrade/shared/browser/*": [
+        "../shared/dist/browser/*"
       ]
     }
   },

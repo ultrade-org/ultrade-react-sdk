@@ -6,8 +6,10 @@ import {
   IDeleteWithdrawalWalletArgs,
 } from '@ultrade/ultrade-js-sdk';
 
-import { IQueryFuncResult, withErrorHandling, getSdkClient } from '@utils';
+import { IQueryFuncResult, getSdkClient } from '@utils';
 import baseApi from './base.api';
+import { withErrorHandling } from '@helpers';
+
 
 export const withdrawalWalletsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

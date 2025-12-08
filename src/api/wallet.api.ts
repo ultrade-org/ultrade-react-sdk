@@ -15,7 +15,9 @@ import {
 import { PaginatedResult, TradingKeyView } from "@ultrade/shared/browser/interfaces";
 
 import baseApi from "./base.api";
-import { IQueryFuncResult, getSdkClient, withErrorHandling, createValidatedTag } from "@utils";
+import { IQueryFuncResult, getSdkClient, createValidatedTag } from "@utils";
+import { withErrorHandling } from '@helpers';
+
 
 export const walletApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
