@@ -1,4 +1,4 @@
-import { IPairDto, PairSettingsIds, SettingIds } from "@ultrade/ultrade-js-sdk";
+import { IPairDto, ISettingsState, PairSettingsIds, SettingIds } from "@ultrade/ultrade-js-sdk";
 import { IPair } from "@ultrade/shared/browser/interfaces";
 
 import { IGetPairListTransformedResult } from "@interface";
@@ -6,8 +6,7 @@ import { convertJsonToArray, equalsIgnoreCase, buildPair, notRestrictedPairs } f
 
 interface BuildPairsDataArgs {
   originalData: IPairDto[];
-  currentCountry?: string;
-  cachedSettings: any;
+  cachedSettings: ISettingsState;
   prevList: IPair[];
   selectedPairId?: string | number;
   messageId?: string;
@@ -15,15 +14,14 @@ interface BuildPairsDataArgs {
 
 export const pairHandler = ({
   originalData,
-  currentCountry,
   cachedSettings,
   prevList,
   selectedPairId,
   messageId
 }: BuildPairsDataArgs): IGetPairListTransformedResult => {
-  const availablePairs = notRestrictedPairs(originalData, currentCountry);
+  const availablePairs = notRestrictedPairs(originalData, cachedSettings?.currentCountry);
 
-  const pinnedPairsArray = convertJsonToArray(cachedSettings[SettingIds.PINNED_PAIRS]);
+  const pinnedPairsArray = convertJsonToArray(cachedSettings?.[SettingIds.PINNED_PAIRS]);
   let selectedId = selectedPairId;
 
   if (!selectedId && pinnedPairsArray.length) {

@@ -17,35 +17,34 @@ export const marketsPairsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getPairList: builder.query<IGetPairListTransformedResult, IGetPairListArgs>({
 
-      queryFn: async ({ companyId, currentCountry, selectedPairId }, { getState }): IQueryFuncResult<IGetPairListTransformedResult> => {
-        
+      queryFn: async ({ selectedPairId }, { getState }): IQueryFuncResult<IGetPairListTransformedResult> => {
         const state = getState() as any;
         const client = getSdkClient();
-        const originResult = await withErrorHandling(() => client.getPairList(companyId));
+        const cachedSettings = marketsCommonApi.endpoints.getSettings.select()(state).data;
+
+        const originResult = await withErrorHandling(() => client.getPairList(cachedSettings.companyId));
 
         if (!dataGuard(originResult)) {
           return originResult;
         }
+
         const originalData = originResult.data;
 
-        const cachedSettings = marketsCommonApi.endpoints.getSettings.select(null)(state).data;
+        const prevPairListData = marketsPairsApi.endpoints.getPairList.select({selectedPairId})(state).data;
 
-        const preparedCachedArgs = { companyId, currentCountry: !currentCountry ? undefined : currentCountry, selectedPairId: selectedPairId ? selectedPairId : undefined }
-
-        const prevPairListData = marketsPairsApi.endpoints.getPairList.select(preparedCachedArgs)(state).data;
+        const listOfPairs = prevPairListData?.listOfPairs ?? originalData
 
         const preparedResult = pairHandler({
           originalData,
-          currentCountry,
           cachedSettings,
-          prevList: prevPairListData?.listOfPairs ?? originalData,
+          prevList: listOfPairs,
           selectedPairId,
         });
 
         return { data: preparedResult }
       },
-      providesTags: (result, error, { companyId }) => createPairListTag('markets_pair_list', companyId),
-      async onCacheEntryAdded({ companyId, currentCountry, selectedPairId }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
+      providesTags: (result, error, { selectedPairId }) => [{ type: 'markets_pair_list', id: selectedPairId }],
+      async onCacheEntryAdded({ selectedPairId }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         const state = getState() as any;
 
         let handlerId: number | null = null;
@@ -57,30 +56,28 @@ export const marketsPairsApi = baseApi.injectEndpoints({
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [IPair[], string]) => {
 
+            if(event !== "allStat"){
+              return;
+            }
+
             if (!args && !args.length) {
               return;
             }
             
-            const socketData = args[0]
-            const messageId = args[1] 
+            const [socketData, messageId] = args;
 
             if(!socketData){
               return
             }
     
-            const cachedSettings = marketsCommonApi.endpoints.getSettings.select(null)(state).data;
+            const cachedSettings = marketsCommonApi.endpoints.getSettings.select()(state).data;
 
-            const preparedCachedArgs = { companyId, currentCountry: !currentCountry ? undefined : currentCountry, selectedPairId: selectedPairId ? selectedPairId : undefined }
-
-            const prevPairListData = marketsPairsApi.endpoints.getPairList.select(preparedCachedArgs)(state).data;
+            const prevPairListData = marketsPairsApi.endpoints.getPairList.select({selectedPairId})(state).data;
       
-            const listOfPairs = prevPairListData?.listOfPairs ?? socketData;
-
             const preparedResult = pairHandler({
               originalData: socketData,
-              currentCountry,
               cachedSettings,
-              prevList: listOfPairs,
+              prevList: prevPairListData?.listOfPairs ?? socketData,
               selectedPairId,
               messageId,
             });
