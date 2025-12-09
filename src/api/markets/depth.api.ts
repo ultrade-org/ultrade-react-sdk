@@ -30,7 +30,7 @@ export const marketsDepthApi = baseApi.injectEndpoints({
       },
       providesTags: (result, error, { symbol, depth }) => [{ type: 'markets_depth', id: `${symbol}-${depth}` }],
 
-      async onCacheEntryAdded({ baseDecimal }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
+      async onCacheEntryAdded({ symbol, baseDecimal }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
         let handlerId: number | null = null;
         const rtkClient = getSdkClient();
         const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.DEPTH]);
@@ -40,7 +40,7 @@ export const marketsDepthApi = baseApi.injectEndpoints({
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [IGetDepth, string]) => {
 
-            if (!args && !args.length) {
+            if(!args) {
               return;
             }
 
@@ -56,19 +56,17 @@ export const marketsDepthApi = baseApi.injectEndpoints({
               if (!draft) {
                 return initialDepthState;
               }
-
+        
               if (draft.lastUpdateId >= socketData.U) {
                 return draft;
               }
 
-              // There is no this case, because cache is going to be changed in particular pair's cache
-              // if (getState().user.selectedPair?.pair_key !== data.pair) {
-              //   return;
-              // }
-
-              draft.lastUpdateId = socketData.U;
-              draft.buyOrders = preparedResult.buyOrders;
-              draft.sellOrders = preparedResult.sellOrders;
+              if(socketData.pair === symbol) {
+                draft.lastUpdateId = socketData.U;
+                draft.buyOrders = preparedResult.buyOrders;
+                draft.sellOrders = preparedResult.sellOrders;
+              }
+             
             });
           });
         } catch (error) {
