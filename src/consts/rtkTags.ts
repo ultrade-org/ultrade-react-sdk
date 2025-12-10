@@ -7,6 +7,7 @@ const marketsTags = [
   'markets_settings',
   'markets_pair_list',
   'markets_history',
+  'markets_codex_assets',
 ] as const
 
 const walletTags = [

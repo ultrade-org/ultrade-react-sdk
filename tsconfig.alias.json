@@ -10,6 +10,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "experimentalDecorators": true,
     "skipLibCheck": true,
     "composite": true,
@@ -25,6 +26,9 @@
     "paths": {
       "@api/*": [
         "./src/api/*"
+      ],
+      "@assets": [
+        "./src/assets/index.ts"
       ],
       "@api": [
         "./src/api/index.ts"
@@ -49,7 +53,7 @@
       ]
     }
   },
-  "include": [
+"include": [
     "src/**/*"
   ],
   "exclude": [

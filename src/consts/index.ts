@@ -7,3 +7,5 @@ export const API_HOST = process.env.REACT_APP_API_URL;
 
 export * from './redux';
 export { composedTags } from './rtkTags';
+
+export { trustWalletChains } from './common';
