@@ -2,10 +2,10 @@ import { CodexBalanceDto, IPair, STREAMS } from "@ultrade/ultrade-js-sdk";
 
 import { IQueryFuncResult, dataGuard, getSdkClient } from "@utils";
 import baseApi from "../base.api";
-import { depositBalanceGuard, withErrorHandling } from '@helpers';
+import {  withErrorHandling } from '@helpers';
 import { IDepositBalanceTransformedResult, IExchangeAssetsTransformedResult } from "@interface";
-import { depositBalanceHandler, exchangeAssetsHandler, mapAsset, prepareAssets } from "@redux";
-import { initialExchangeAssetsState } from "@consts";
+import { depositBalanceHandler, mapAsset, prepareAssets, saveExchangeAssetsHandler, updateExchangeAssetsHandler } from "@redux";
+import { initialDepositBalanceState, initialExchangeAssetsState } from "@consts";
 
 interface ISocketData {
   data: CodexBalanceDto;
@@ -13,37 +13,44 @@ interface ISocketData {
 
 export const marketsBalancesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getBalances: builder.query<IDepositBalanceTransformedResult, void>({
-      queryFn: async (args,{ getState }): IQueryFuncResult<IDepositBalanceTransformedResult> => {
-        const client = getSdkClient();
-        const state = getState() as any;
-        const originResult = await withErrorHandling(() => client.getBalances());
+    getBalances: builder.query<IDepositBalanceTransformedResult, IPair["pair_key"]>({
+      queryFn: async (pairKey, { getState, dispatch }): IQueryFuncResult<IDepositBalanceTransformedResult> => {
 
+        const client = getSdkClient();
+        const originResult = await withErrorHandling(() => client.getBalances());
+        
         if (!dataGuard(originResult)) {
           return originResult;
         }
+        const state = getState() as any;
+
+        const preparedPair = state.user.selectedPair as IPair;
 
         const balances = originResult.data;
 
-        const selectedPair = state.user.selectedPair as IPair;
-        const prevDepositBalance = marketsBalancesApi.endpoints.getBalances.select()(state).data;
+        const prevDepositBalance = marketsBalancesApi.endpoints.getBalances.select(pairKey)(state).data ?? initialDepositBalanceState;
 
         const prevAssets = marketsBalancesApi.endpoints.getCodexAssets.select()(state).data;
 
         const preparedAssets = prepareAssets(prevAssets, balances);
 
-        marketsBalancesApi.util.updateQueryData('getCodexAssets', undefined, () => {
-          return preparedAssets;
-        });
+        dispatch(marketsBalancesApi.util.upsertQueryData('getCodexAssets', undefined, preparedAssets));
 
-        return { data: depositBalanceHandler(balances, prevDepositBalance, selectedPair) };
+        return { data: depositBalanceHandler(balances, prevDepositBalance, preparedPair) };
       },
       providesTags: ['markets_balances'],
       async onCacheEntryAdded(args, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
+
         let handlerId: number | null = null;
-        const rtkClient = getSdkClient();
         const state = getState() as any;
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.CODEX_BALANCES]);
+        const rtkClient = getSdkClient();
+        const preparedPair = state.user.selectedPair as IPair
+
+        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.CODEX_BALANCES], preparedPair?.pair_key);
+
+        if (!subscribeOptions) {
+          return;
+        }
 
         try {
           await cacheDataLoaded;
@@ -58,13 +65,9 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
             if (!socketData) {
               return;
             }
-
-            const selectedPair = state.user.selectedPair as IPair;
-
+            
             updateCachedData((draft) => {
-              const preparedResult = depositBalanceHandler([socketData], draft, selectedPair);
-
-              return preparedResult
+              return depositBalanceHandler([socketData], draft, preparedPair)
             });
           });
         } catch (error) {
@@ -75,30 +78,32 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
         rtkClient.unsubscribe(handlerId);
       },
     }),
+
     getCodexAssets: builder.query<IExchangeAssetsTransformedResult, void>({
-      queryFn: async (args,{ getState }): IQueryFuncResult<IExchangeAssetsTransformedResult> => {
+      queryFn: async (): IQueryFuncResult<IExchangeAssetsTransformedResult> => {
+
         const client = getSdkClient();
-        const state = getState() as any;
         const originResult = await withErrorHandling(() => client.getCodexAssets());
         
         if (!dataGuard(originResult)) {
           return originResult;
         }
 
-        const codexAssets = originResult.data;
-
-        const preparedAssets = codexAssets.map(asset => mapAsset(asset, undefined));
-
-        const prevExchangeAssets = marketsBalancesApi.endpoints.getCodexAssets.select()(state).data;
-
-        return { data: exchangeAssetsHandler(preparedAssets, prevExchangeAssets) };
+        return { data: saveExchangeAssetsHandler(originResult.data) };
       },
       providesTags: ['markets_codex_assets'],
       async onCacheEntryAdded(args, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
+
         let handlerId: number | null = null;
+        const state = getState() as any
         const rtkClient = getSdkClient();
-        const state = getState() as any;
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.CODEX_BALANCES]);
+        const preparedPair = state.user.selectedPair as IPair
+
+        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.CODEX_BALANCES], preparedPair?.pair_key);
+
+        if (!subscribeOptions) {
+          return;
+        }
 
         try {
           await cacheDataLoaded;
@@ -115,10 +120,8 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
               return;
             }
             
-            updateCachedData((draft) => {
-              const preparedResult = exchangeAssetsHandler(socketData, draft);
-              
-              return preparedResult;
+            updateCachedData((draft) => {              
+              return updateExchangeAssetsHandler(socketData, draft);
             });
           });
         } catch (error) {

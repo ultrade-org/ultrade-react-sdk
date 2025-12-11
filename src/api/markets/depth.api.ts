@@ -1,4 +1,4 @@
-import { IGetDepth, IGetDepthArgs, STREAMS } from '@ultrade/ultrade-js-sdk';
+import { IGetDepth, IGetDepthArgs, IPair, STREAMS } from '@ultrade/ultrade-js-sdk';
 
 import { IQueryFuncResult, dataGuard, getSdkClient } from '@utils';
 import baseApi from '../base.api';
@@ -30,10 +30,17 @@ export const marketsDepthApi = baseApi.injectEndpoints({
       },
       providesTags: (result, error, { symbol, depth }) => [{ type: 'markets_depth', id: `${symbol}-${depth}` }],
 
-      async onCacheEntryAdded({ symbol, baseDecimal }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
+      async onCacheEntryAdded({ symbol, baseDecimal }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         let handlerId: number | null = null;
+        const state = getState() as any
         const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.DEPTH]);
+        const preparedPair = state.user.selectedPair as IPair
+
+        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.DEPTH], preparedPair?.pair_key);
+
+        if (!subscribeOptions) {
+          return;
+        }
 
         try {
           await cacheDataLoaded;

@@ -49,7 +49,13 @@ export const marketsPairsApi = baseApi.injectEndpoints({
 
         let handlerId: number | null = null;
         const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.ALL_STAT]);
+        const preparedPair = state.user.selectedPair as IPair
+
+        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.ALL_STAT], preparedPair?.pair_key);
+
+        if (!subscribeOptions) {
+          return;
+        }
 
         try {
           await cacheDataLoaded;

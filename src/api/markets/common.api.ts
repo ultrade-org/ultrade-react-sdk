@@ -1,4 +1,4 @@
-import { ISettingsState, STREAMS, SettingsInit } from '@ultrade/ultrade-js-sdk';
+import { IPair, ISettingsState, STREAMS, SettingsInit } from '@ultrade/ultrade-js-sdk';
 
 import { IQueryFuncResult, dataGuard, getSdkClient } from '@utils';
 import baseApi from '../base.api';
@@ -24,10 +24,18 @@ export const marketsCommonApi = baseApi.injectEndpoints({
       },
       providesTags: ['markets_settings'],
 
-      async onCacheEntryAdded(args, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
+      async onCacheEntryAdded(args, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         let handlerId: number | null = null;
         const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.SETTINGS_UPDATE]);
+        const state = getState() as any
+
+        const preparedPair = state.user.selectedPair as IPair
+
+        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.SETTINGS_UPDATE], preparedPair?.pair_key);
+
+        if (!subscribeOptions) {
+          return;
+        }
 
         try {
           await cacheDataLoaded;
