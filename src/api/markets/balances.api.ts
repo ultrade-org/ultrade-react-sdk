@@ -30,7 +30,7 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
 
         const prevDepositBalance = marketsBalancesApi.endpoints.getBalances.select(pairKey)(state).data ?? initialDepositBalanceState;
 
-        const prevAssets = marketsBalancesApi.endpoints.getCodexAssets.select()(state).data;
+        const prevAssets = marketsBalancesApi.endpoints.getCodexAssets.select()(state).data || initialExchangeAssetsState;
 
         const preparedAssets = prepareAssets(prevAssets, balances);
 
@@ -47,6 +47,10 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
         const preparedPair = state.user.selectedPair as IPair
 
         const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.CODEX_BALANCES], preparedPair?.pair_key);
+
+        if (!subscribeOptions) {
+          return;
+        }
 
         if (!subscribeOptions) {
           return;
@@ -100,6 +104,10 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
         const preparedPair = state.user.selectedPair as IPair
 
         const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.CODEX_BALANCES], preparedPair?.pair_key);
+
+        if (!subscribeOptions) {
+          return;
+        }
 
         if (!subscribeOptions) {
           return;

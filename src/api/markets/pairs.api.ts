@@ -57,6 +57,10 @@ export const marketsPairsApi = baseApi.injectEndpoints({
           return;
         }
 
+        if (!subscribeOptions) {
+          return;
+        }
+
         try {
           await cacheDataLoaded;
 

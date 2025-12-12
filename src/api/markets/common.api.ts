@@ -37,6 +37,10 @@ export const marketsCommonApi = baseApi.injectEndpoints({
           return;
         }
 
+        if (!subscribeOptions) {
+          return;
+        }
+
         try {
           await cacheDataLoaded;
 

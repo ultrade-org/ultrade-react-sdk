@@ -46,3 +46,6 @@ export const adjustFee = (fee: number, minFee: number) => {
   if (!fee) return 0;
   return convertFeeToPrecent(BigNumber(fee).plus(minFee).toString());
 }
+
+export const sortByDate = (a: number | string | Date, b: number | string | Date) => new Date(b).getTime() - new Date(a).getTime();
+
