@@ -47,9 +47,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
         const cacheKey = { symbol, status: status === openOrderStatus ? openOrderStatus : closeOrderStatus, startTime, endTime, limit };
 
         const prevOrdersState = marketsOrdersApi.endpoints.getOrders.select(cacheKey)(state).data || initialUserOrdersState;
-        console.log("cacheKey", prevOrdersState);
-        console.log(originResult.data);
-
+       
         const preparedResult = saveUserOrders(originResult.data, prevOrdersState, orderHistoryTab, listOfPairs);
 
         return { data: preparedResult };
@@ -57,13 +55,13 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
       providesTags: ['markets_orders'],
       async onCacheEntryAdded({ symbol }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         let handlerId: number | null = null;
+        const state = getState() as any;
         const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.ORDERS], symbol);
+        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.ORDERS], symbol ? symbol : state.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
         }
-        const state = getState() as any;
 
         try {
           await cacheDataLoaded;
