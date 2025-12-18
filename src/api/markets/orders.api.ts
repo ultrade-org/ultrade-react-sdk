@@ -67,10 +67,10 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
           await cacheDataLoaded;
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: IOrderSocketArgs) => {
-
             if(!args || !args[0].length) {
               return;
             }
+            console.log('argsSocketOrder', args);
             const [[action, data]] = args
 
             const selectedPair = state.user.selectedPair as IPair;
@@ -97,6 +97,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
     cancelOrder: builder.mutation<ICancelOrderResponse, ICancelOrderArgs>({
       queryFn: async (data: ICancelOrderArgs): IQueryFuncResult<ICancelOrderResponse> => {
         const client = getSdkClient();
+        console.log('cancelOrder', data);
         return await withErrorHandling(() => client.cancelOrder(data));
       },
       invalidatesTags: (result, error, { orderId }) => [{ type: 'markets_orders', id: orderId }],
