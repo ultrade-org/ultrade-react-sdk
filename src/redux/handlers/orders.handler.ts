@@ -9,7 +9,7 @@ export const handleSocketOrder = <T extends keyof IOrderSocketActionMap>(
   prevOrdersState: IUserOrders,
   openHistoryTab: OrderExecutionType,
   currentPair?: IPair
-): IUserOrders => {
+): IUserOrders | null => {
   switch (action) {
     case "add":
       return saveNewOpenOrder(data as AddOrderEvent, prevOrdersState, currentPair);

@@ -70,14 +70,17 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
             if(!args || !args[0].length) {
               return;
             }
-            console.log('argsSocketOrder', args);
             const [[action, data]] = args
 
             const selectedPair = state.user.selectedPair as IPair;
             const orderHistoryTab = state.exchange.openHistoryTab as OrderExecutionType;
 
             updateCachedData((draft) => {
-              return handleSocketOrder(action, data, draft, orderHistoryTab, selectedPair);
+              const result = handleSocketOrder(action, data, draft, orderHistoryTab, selectedPair);
+              if (result) {
+                draft.open = result.open;
+                draft.close = result.close;
+              }
             });
           });
         } catch (error) {

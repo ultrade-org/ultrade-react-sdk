@@ -77,14 +77,14 @@ export const calculateOrder = (array: string[][], baseDecimal: number) =>
     return { ...prevOrdersState, open: [ newOrder, ...prevOrdersState.open ] };
   };
 
-  export const updateOrderState = (data: UpdateOrderEvent, { open, close }: IUserOrders, openHistoryTab: OrderExecutionType ): IUserOrders=> {
+  export const updateOrderState = (data: UpdateOrderEvent, { open, close }: IUserOrders, openHistoryTab: OrderExecutionType ): IUserOrders | null => {
     const [ _pairId, _pairKey, _userId, id, status, executedPrice, filledAmount, filledTotal, _updatedAt, completedAt ] = data;
    
     const openOrderIdx = open.findIndex((op: Order) => op.id === id);
     const closeOrderIdx = close.findIndex((op: Order) => op.id === id);
   
     if (openOrderIdx === -1 && closeOrderIdx === -1) {
-      return;
+      return null;
     }
   
     const updatedOrder: Partial<Order> = {
