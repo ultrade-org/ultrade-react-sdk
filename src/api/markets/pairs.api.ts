@@ -1,5 +1,4 @@
-import { IPair } from '@ultrade/shared/browser/interfaces';
-import { IGetPairListArgs, STREAMS } from '@ultrade/ultrade-js-sdk';
+import { IGetPairListArgs, STREAMS, IPair, IPairDto } from '@ultrade/ultrade-js-sdk';
 
 import {
   IQueryFuncResult,
@@ -32,7 +31,7 @@ export const marketsPairsApi = baseApi.injectEndpoints({
 
         const prevPairListData = marketsPairsApi.endpoints.getPairList.select({selectedPairId})(state).data;
 
-        const listOfPairs = prevPairListData?.listOfPairs ?? originalData
+        const listOfPairs = prevPairListData?.listOfPairs ?? []
 
         const preparedResult = pairHandler({
           originalData,
@@ -64,7 +63,7 @@ export const marketsPairsApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [IPair[], string]) => {
+          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [IPairDto[], string]) => {
 
             if(event !== "allStat"){
               return;
@@ -87,7 +86,7 @@ export const marketsPairsApi = baseApi.injectEndpoints({
             const preparedResult = pairHandler({
               originalData: socketData,
               cachedSettings,
-              prevList: prevPairListData?.listOfPairs ?? socketData,
+              prevList: prevPairListData?.listOfPairs ?? [],
               selectedPairId,
               messageId,
             });

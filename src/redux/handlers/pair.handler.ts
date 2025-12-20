@@ -1,5 +1,4 @@
-import { IPairDto, ISettingsState, PairSettingsIds, SettingIds } from "@ultrade/ultrade-js-sdk";
-import { IPair } from "@ultrade/shared/browser/interfaces";
+import { IPairDto, ISettingsState, PairSettingsIds, SettingIds, IPair } from "@ultrade/ultrade-js-sdk";
 
 import { IGetPairListTransformedResult } from "@interface";
 import { convertJsonToArray, equalsIgnoreCase, buildPair, notRestrictedPairs } from "../helpers";
@@ -36,7 +35,7 @@ export const pairHandler = ({
   }
 
   const pairsData = originalData.map((el) => {
-    const buildEl = buildPair(el, { minFee: cachedSettings.minFee });
+    const buildEl = buildPair(el, { minFee: cachedSettings?.minFee || 0 });
     const oldPair = prevList.find((p: IPair) => equalsIgnoreCase(p.pair_key, el.pair_key));
     return oldPair ? { ...oldPair, ...buildEl } : buildEl;
   });

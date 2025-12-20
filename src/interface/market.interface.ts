@@ -1,4 +1,4 @@
-import { IPair } from '@ultrade/shared/browser/interfaces';
+import { IPair } from '@ultrade/ultrade-js-sdk';
 
 export interface IGetDepthTransformedResult {
   lastUpdateId: number;
