@@ -66,7 +66,7 @@ export const marketsPairsApi = baseApi.injectEndpoints({
               return;
             }
 
-            if (!args && !args.length) {
+            if (!args && !args?.length) {
               return;
             }
             

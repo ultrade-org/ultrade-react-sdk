@@ -47,6 +47,10 @@ export const marketsDepthApi = baseApi.injectEndpoints({
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [IGetDepth, string]) => {
 
+            if(event !== "depth"){
+              return;
+            }
+
             if(!args) {
               return;
             }

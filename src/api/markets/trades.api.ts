@@ -49,7 +49,7 @@ export const marketsTradesApi = baseApi.injectEndpoints({
           await cacheDataLoaded;
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [LastTradeEvent, string]) => {
-
+            
             if(event !== "lastTrade") {
               return;
             }
@@ -63,7 +63,8 @@ export const marketsTradesApi = baseApi.injectEndpoints({
             if (!lastTrade) {
               return;
             }
-           const chartTrade = saveChartTrade(lastTrade);
+
+            const chartTrade = saveChartTrade(lastTrade);
 
             dispatch({
               type: 'exchange/SAVE_CHART_TRADE',
@@ -71,6 +72,11 @@ export const marketsTradesApi = baseApi.injectEndpoints({
             });
 
             updateCachedData((draft) => {
+
+              if(!draft) {
+                return initialTradesState;
+              }
+
               const result = saveSocketTradeHandler(draft.marketTrades, lastTrade);
               
               if (!result) {

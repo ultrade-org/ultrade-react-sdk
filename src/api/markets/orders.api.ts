@@ -12,13 +12,14 @@ import {
   IPair,
   OrderExecutionType,
   OrderExecution,
+  UserTradeEvent,
 } from "@ultrade/ultrade-js-sdk";
 
 import { IQueryFuncResult, dataGuard, getSdkClient } from "@utils";
 import { withErrorHandling } from '@helpers';
 import baseApi from "../base.api";
 import { IUserOrders } from "@interface";
-import { IOrderSocketActionMap, handleSocketOrder, saveUserOrders } from "@redux";
+import { IOrderSocketActionMap, handleSocketOrder, newTradeForOrderHandler, saveUserOrders } from "@redux";
 import { initialUserOrdersState } from "@consts";
 
 const openOrderStatus = OrderExecution[OrderExecutionType.open]
@@ -26,7 +27,13 @@ const closeOrderStatus = OrderExecution[OrderExecutionType.close];
 
 type IOrderSocketAction = keyof IOrderSocketActionMap;
 
-type IOrderSocketArgs = [[IOrderSocketAction, IOrderSocketActionMap[IOrderSocketAction]],string];
+type IOrderSocketArgs = [IOrderSocketAction, IOrderSocketActionMap[IOrderSocketAction]]
+
+type IOrdersSocketArgs = [IOrderSocketArgs | UserTradeEvent, string];
+
+const orderSocketEventGuard = (event: string, args: IOrderSocketArgs | UserTradeEvent): args is UserTradeEvent => {
+  return event === "userTrade";
+}
 
 export const marketsOrdersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -57,7 +64,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
         let handlerId: number | null = null;
         const state = getState() as any;
         const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.ORDERS], symbol ? symbol : state.user.selectedPair?.pair_key);
+        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.ORDERS, STREAMS.TRADES], symbol ? symbol : state.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
@@ -66,21 +73,58 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: IOrderSocketArgs) => {
-            if(!args || !args[0].length) {
+          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: IOrdersSocketArgs) => {
+            console.log('event10', event);
+            if(!args) {
               return;
             }
-            const [[action, data]] = args
-
+            
             const selectedPair = state.user.selectedPair as IPair;
             const orderHistoryTab = state.exchange.openHistoryTab as OrderExecutionType;
+            
+            if(orderSocketEventGuard(event, args[0])){
+
+              const data = args[0];
+
+              updateCachedData((draft) => {
+                const draftCopy: IUserOrders = {
+                  open: [...(draft.open || [])],
+                  close: [...(draft.close || [])],
+                };
+                
+                const result = newTradeForOrderHandler(data, draftCopy);
+                
+                if (!result) {
+                  return;
+                }
+                
+                return result;
+              });
+              return  
+            }
+
+            if(event !== "order"){
+              return;
+            }
+            
+            const [[action, data]] = args
 
             updateCachedData((draft) => {
-              const result = handleSocketOrder(action, data, draft, orderHistoryTab, selectedPair);
-              if (result) {
-                draft.open = result.open;
-                draft.close = result.close;
+              // Create a plain copy of draft to avoid mutating Immer proxy
+              // updateOrderState modifies the arrays, so we need a copy
+              const draftCopy: IUserOrders = {
+                open: [...(draft.open || [])],
+                close: [...(draft.close || [])],
+              };
+              
+              const result = handleSocketOrder(action, data, draftCopy, orderHistoryTab, selectedPair);
+
+              if (!result) {
+                return;
               }
+
+              // Return new value instead of mutating draft
+              return result;
             });
           });
         } catch (error) {

@@ -1,6 +1,6 @@
 {
   "name": "@ultrade/react-sdk",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "",
   "keywords": [],
   "main": "./dist/index.js",
