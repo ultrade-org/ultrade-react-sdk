@@ -12,7 +12,6 @@ export const marketsTradesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getLastTrades: builder.query<IGetLastTradesTransformedResult, IGetLastTradesArgs>({
       queryFn: async ({ symbol }: IGetLastTradesArgs, { getState, dispatch }): IQueryFuncResult<IGetLastTradesTransformedResult> => {
-        const state = getState() as any;
         const client = getSdkClient();
         const originResult = await withErrorHandling(() => client.getLastTrades(symbol));
 
@@ -40,8 +39,8 @@ export const marketsTradesApi = baseApi.injectEndpoints({
         let handlerId: number | null = null;
         const state = getState() as any;
         const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.TRADES], symbol ? symbol : state.user.selectedPair?.pair_key);
-
+        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.ORDERS], symbol ? symbol : state.user.selectedPair?.pair_key);
+        
         if (!subscribeOptions) {
           return;
         }
@@ -50,6 +49,10 @@ export const marketsTradesApi = baseApi.injectEndpoints({
           await cacheDataLoaded;
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [LastTradeEvent, string]) => {
+
+            if(event !== "lastTrade") {
+              return;
+            }
 
             if(!args || !args[0].length) {
               return;
@@ -67,20 +70,20 @@ export const marketsTradesApi = baseApi.injectEndpoints({
               data: chartTrade,
             });
 
-            // const selectedPair = state.user.selectedPair as IPair;
-            // const orderHistoryTab = state.exchange.openHistoryTab as OrderExecutionType;
-
             updateCachedData((draft) => {
-              const result = saveSocketTradeHandler(draft.marketTrades || [], lastTrade);
+              const result = saveSocketTradeHandler(draft.marketTrades, lastTrade);
               
-              if (result) {
-                const { marketTrades, orderBook } = result;
-                dispatch({
-                  type: 'exchange/SAVE_LTP',
-                  data: orderBook,
-                });
-                draft.marketTrades = marketTrades;
+              if (!result) {
+                return;
               }
+
+              const { marketTrades, orderBook } = result;
+              dispatch({
+                type: 'exchange/SAVE_LTP',
+                data: orderBook,
+              });
+              draft.marketTrades = marketTrades;
+
             });
           });
         } catch (error) {
@@ -93,4 +96,3 @@ export const marketsTradesApi = baseApi.injectEndpoints({
     }),
   }),
 });
-

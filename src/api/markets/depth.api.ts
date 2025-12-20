@@ -42,10 +42,6 @@ export const marketsDepthApi = baseApi.injectEndpoints({
           return;
         }
 
-        if (!subscribeOptions) {
-          return;
-        }
-
         try {
           await cacheDataLoaded;
 

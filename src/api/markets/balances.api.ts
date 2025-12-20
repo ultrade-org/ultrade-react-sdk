@@ -52,10 +52,6 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
           return;
         }
 
-        if (!subscribeOptions) {
-          return;
-        }
-
         try {
           await cacheDataLoaded;
 

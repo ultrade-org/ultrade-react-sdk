@@ -25,38 +25,38 @@ export const marketsCommonApi = baseApi.injectEndpoints({
       providesTags: ['markets_settings'],
 
       async onCacheEntryAdded(args, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
-        let handlerId: number | null = null;
-        const rtkClient = getSdkClient();
-        const state = getState() as any
+        // let handlerId: number | null = null;
+        // const rtkClient = getSdkClient();
+        // const state = getState() as any
 
-        const preparedPair = state.user.selectedPair as IPair
+        // const preparedPair = state.user.selectedPair as IPair
 
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.SETTINGS_UPDATE], preparedPair?.pair_key);
+        // const subscribeOptions = rtkClient.getSocketSubscribeOptions([], preparedPair?.pair_key);
 
-        if (!subscribeOptions) {
-          return;
-        }
+        // if (!subscribeOptions) {
+        //   return;
+        // }
 
-        if (!subscribeOptions) {
-          return;
-        }
+        // if (!subscribeOptions) {
+        //   return;
+        // }
 
-        try {
-          await cacheDataLoaded;
+        // try {
+        //   await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args) => {
+        //   handlerId = rtkClient.subscribe(subscribeOptions, (event, args) => {
 
-            if (!args && !args.length) {
-              return;
-            }
+        //     if (!args && !args.length) {
+        //       return;
+        //     }
 
-            const { data: socketData } = args[0] as { data: SettingsInit };
+        //     const { data: socketData } = args[0] as { data: SettingsInit };
 
-            if (!socketData) {
-              return;
-            }
+        //     if (!socketData) {
+        //       return;
+        //     }
 
-            const preparedResult = settingsHandler(socketData);
+            // const preparedResult = settingsHandler(socketData);
 
 
             //!!! STREAMS.SETTINGS_UPDATE is simular to ALL_STAT, so we don't need to update the cached data
@@ -70,14 +70,14 @@ export const marketsCommonApi = baseApi.injectEndpoints({
             //     ...draft,
             //     ...preparedResult,
             //   };
-            // });
-          });
-        } catch (error) {
-          console.error('Error loading cache data:', error);
-        }
+        //     // });
+        //   });
+        // } catch (error) {
+        //   console.error('Error loading cache data:', error);
+        // }
 
-        await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        // await cacheEntryRemoved;
+        // rtkClient.unsubscribe(handlerId);
       },
     }),
   }),

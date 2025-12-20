@@ -52,9 +52,6 @@ export const marketsPairsApi = baseApi.injectEndpoints({
 
         const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.ALL_STAT], preparedPair?.pair_key);
 
-        if (!subscribeOptions) {
-          return;
-        }
 
         if (!subscribeOptions) {
           return;
