@@ -74,7 +74,6 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
           await cacheDataLoaded;
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: IOrdersSocketArgs) => {
-            console.log('event10', event);
             if(!args) {
               return;
             }
