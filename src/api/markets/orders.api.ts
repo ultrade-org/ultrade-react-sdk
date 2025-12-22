@@ -86,18 +86,15 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
               const data = args[0];
 
               updateCachedData((draft) => {
-                const draftCopy: IUserOrders = {
-                  open: [...(draft.open || [])],
-                  close: [...(draft.close || [])],
-                };
-                
-                const result = newTradeForOrderHandler(data, draftCopy);
+
+                const result = newTradeForOrderHandler(data, draft);
                 
                 if (!result) {
                   return;
                 }
                 
-                return result;
+                draft.open = result.open;
+                draft.close = result.close;
               });
               return  
             }
@@ -109,21 +106,14 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
             const [[action, data]] = args
 
             updateCachedData((draft) => {
-              // Create a plain copy of draft to avoid mutating Immer proxy
-              // updateOrderState modifies the arrays, so we need a copy
-              const draftCopy: IUserOrders = {
-                open: [...(draft.open || [])],
-                close: [...(draft.close || [])],
-              };
-              
-              const result = handleSocketOrder(action, data, draftCopy, orderHistoryTab, selectedPair);
+              const result = handleSocketOrder(action, data, draft, orderHistoryTab, selectedPair);
 
               if (!result) {
                 return;
               }
 
-              // Return new value instead of mutating draft
-              return result;
+              draft.open = result.open;
+              draft.close = result.close;
             });
           });
         } catch (error) {
@@ -143,7 +133,6 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
     cancelOrder: builder.mutation<ICancelOrderResponse, ICancelOrderArgs>({
       queryFn: async (data: ICancelOrderArgs): IQueryFuncResult<ICancelOrderResponse> => {
         const client = getSdkClient();
-        console.log('cancelOrder', data);
         return await withErrorHandling(() => client.cancelOrder(data));
       },
       invalidatesTags: (result, error, { orderId }) => [{ type: 'markets_orders', id: orderId }],
