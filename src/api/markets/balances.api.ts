@@ -57,10 +57,6 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ISocketData, string]) => {
             
-            if(event !== "allStat"){
-              return;
-            }
-
             if(!args && args?.length) {
               return;
             }

@@ -59,7 +59,7 @@ export const walletApi = baseApi.injectEndpoints({
           await cacheDataLoaded;
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ITransaction, string]) => {
-            console.log( event, args);
+            console.log("event transactions", event, args);
             if (!args || !args.length) {
               return;
             }
@@ -118,7 +118,7 @@ export const walletApi = baseApi.injectEndpoints({
           await cacheDataLoaded;
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ITransfer, string]) => {
-            console.log(event, args);
+            console.log("event transfer", event, args);
             if (!args || !args.length) {
               return;
             }
