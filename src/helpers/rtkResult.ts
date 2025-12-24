@@ -13,6 +13,7 @@ export async function withErrorHandling<T>(
     const data = await fn();
     return { data };
   } catch (error: any) {
+    console.error('Error withErrorHandling:', error);
     return new ErrorDto(error);
   }
 }

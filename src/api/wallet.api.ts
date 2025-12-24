@@ -13,7 +13,6 @@ import {
   IRevokeTradingKeyResponse,
   ACTION_TYPE,
   STREAMS,
-  ITransferArgs,
 } from "@ultrade/ultrade-js-sdk";
 import { ITransferData, PaginatedResult, TradingKeyView } from "@ultrade/shared/browser/interfaces";
 
@@ -39,7 +38,7 @@ export const walletApi = baseApi.injectEndpoints({
 
         const prevWalletState = walletApi.endpoints.getWalletTransactions.select({ type, page, limit })(getState() as any).data || initialWalletState;
 
-        const preparedResult = saveUserWalletTransactions(type as ACTION_TYPE, originResult.data.items, prevWalletState);
+        const preparedResult = saveUserWalletTransactions(type, originResult.data.items, prevWalletState);
 
         return { data: preparedResult };
       },

@@ -4,3 +4,4 @@ export * from './balances.interface';
 export * from './orders.interface';
 export * from './trades.interface';
 export * from './wallet.interface';
+export * from './system.interface';

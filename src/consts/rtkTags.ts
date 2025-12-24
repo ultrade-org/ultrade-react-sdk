@@ -22,8 +22,16 @@ const withdrawalWalletsTags = [
   'withdrawal_wallets',
 ] as const
 
+const systemTags = [
+  'system_version',
+  'system_maintenance',
+  'social_settings',
+  'system_notifications',
+] as const
+
 export const composedTags = [
   ...marketsTags,
   ...walletTags,
   ...withdrawalWalletsTags,
+  ...systemTags,
 ] as const
