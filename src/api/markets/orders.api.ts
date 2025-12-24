@@ -38,6 +38,7 @@ const orderSocketEventGuard = (event: string, args: IOrderSocketArgs | UserTrade
 export const marketsOrdersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getOrders: builder.query<IUserOrders, IGetOrdersArgs>({
+      keepUnusedDataFor: 0,
       queryFn: async ({symbol, status, startTime, endTime, limit }: IGetOrdersArgs, { getState }): IQueryFuncResult<IUserOrders> => {
         const client = getSdkClient();
         const originResult = await withErrorHandling(() => client.getOrders(symbol, status, limit, endTime, startTime));

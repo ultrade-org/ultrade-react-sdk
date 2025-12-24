@@ -27,6 +27,7 @@ import { initialWalletState } from "@consts";
 export const walletApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getWalletTransactions: builder.query<IWalletState, IGetWalletTransactionsArgs>({
+      keepUnusedDataFor: 0,
       queryFn: async ({ type, page, limit }: IGetWalletTransactionsArgs, { getState }): IQueryFuncResult<IWalletState> => {
         const client = getSdkClient();
 
@@ -59,7 +60,9 @@ export const walletApi = baseApi.injectEndpoints({
           await cacheDataLoaded;
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ITransaction, string]) => {
-            console.log("event transactions", event, args);
+            if(event !== "allStat"){
+              console.log("event transactions", event, args);
+            }
             if (!args || !args.length) {
               return;
             }
@@ -87,6 +90,7 @@ export const walletApi = baseApi.injectEndpoints({
       },
     }),
     getTransfers: builder.query<IWalletState, IGetTransfersArgs>({
+      keepUnusedDataFor: 0,
       queryFn: async ({ page, limit }: IGetTransfersArgs, { getState }): IQueryFuncResult<IWalletState> => {
         const client = getSdkClient();
         const originResult = await withErrorHandling(() => client.getTransfers(page, limit));
@@ -118,7 +122,11 @@ export const walletApi = baseApi.injectEndpoints({
           await cacheDataLoaded;
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ITransfer, string]) => {
-            console.log("event transfer", event, args);
+
+            if(event !== "allStat"){
+              console.log("event transfer", event, args);
+            }
+            
             if (!args || !args.length) {
               return;
             }
