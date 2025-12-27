@@ -62,9 +62,9 @@ export const marketsPairsApi = baseApi.injectEndpoints({
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [IPairDto[], string]) => {
 
-            if(event !== "allStat"){
-              return;
-            }
+            // if(event !== "allStat"){
+            //   return;
+            // }
 
             if (!args && !args?.length) {
               return;

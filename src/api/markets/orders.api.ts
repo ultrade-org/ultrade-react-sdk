@@ -100,9 +100,9 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
               return  
             }
 
-            if(event !== "order"){
-              return;
-            }
+            // if(event !== "order"){
+            //   return;
+            // }
             
             const [[action, data]] = args
 

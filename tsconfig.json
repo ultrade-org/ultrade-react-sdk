@@ -12,7 +12,6 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "skipLibCheck": true,
-    "composite": true,
     "declaration": true,
     "declarationDir": "./dist",
     "emitDeclarationOnly": true,
@@ -49,9 +48,6 @@
       ],
       "@utils": [
         "./src/utils/index.ts"
-      ],
-      "@ultrade/shared/browser/*": [
-        "../shared/dist/browser/*"
       ]
     }
   },

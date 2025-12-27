@@ -6,7 +6,7 @@ import { baseBrowserBuildConfig, basePlugins, cleanDistSync } from 'shared-for-b
 const production = process.env.MODE === 'production';
 const distDir = path.resolve(__dirname, 'dist');
 const srcDir = path.resolve(__dirname, 'src');
-const tsconfig = path.resolve(__dirname, 'tsconfig.alias.json');
+const tsconfig = path.resolve(__dirname, 'tsconfig.json');
 
 cleanDistSync(production, distDir);
 
@@ -14,13 +14,14 @@ const plugins: esbuild.Plugin[] = [
   ...basePlugins({
     production,
     src: srcDir,
-    out: distDir,
+    out: path.resolve(distDir, 'src'),
     tsconfig,
   }),
 ];
 
 const externalDeps = [
   '@ultrade/ultrade-js-sdk',
+  '@ultrade/shared',
   '@reduxjs/toolkit',
   'react-redux',
   'react',

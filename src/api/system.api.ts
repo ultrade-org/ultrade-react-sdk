@@ -52,9 +52,9 @@ export const systemApi = baseApi.injectEndpoints({
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [string, string]) => {
             
-            if(event !== "version"){
-              return;
-            }
+            // if(event !== "version"){
+            //   return;
+            // }
 
             if (!args || !args.length) {
               return;
@@ -105,9 +105,9 @@ export const systemApi = baseApi.injectEndpoints({
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ISystemMaintenanceState, string]) => {
           
-            if(event !== "maintenance"){
-              return;
-            }
+            // if(event !== "maintenance"){
+            //   return;
+            // }
             
             if (!args || !args.length) {
               return;
@@ -153,9 +153,9 @@ export const systemApi = baseApi.injectEndpoints({
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ISocialSettings, string]) => {
           
-            if(event !== "pointSystemSettingsUpdate"){
-              return;
-            }
+            // if(event !== "pointSystemSettingsUpdate"){
+            //   return;
+            // }
             
             if (!args || !args.length) {
               return;
@@ -204,9 +204,9 @@ export const systemApi = baseApi.injectEndpoints({
           await cacheDataLoaded;
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [UserNotification, string]) => {
-            if(event !== "new_notification"){
-              return;
-            }
+            // if(event !== "new_notification"){
+            //   return;
+            // }
 
             if (!args || !args.length) {
               return;
@@ -246,6 +246,7 @@ export const systemApi = baseApi.injectEndpoints({
       },
       queryFn: async (notifications: UserNotification[]): IQueryFuncResult<UpdateUserNotificationDto[]> => {
         const client = getSdkClient();
+        
         const unreadNotifications: UpdateUserNotificationDto[] = notifications
         .filter(n => n.status === NotificationStatusEnum.UNREAD)
         .map(({ id, globalNotificationId } ) => {

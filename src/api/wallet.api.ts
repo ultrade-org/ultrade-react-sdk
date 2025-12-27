@@ -59,16 +59,16 @@ export const walletApi = baseApi.injectEndpoints({
           await cacheDataLoaded;
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ITransaction, string]) => {
-            if(event !== "allStat"){
+            if(event !== "allStat" || event !== "depth"){
               console.log("event transactions", event, args);
             }
             if (!args || !args.length) {
               return;
             }
 
-            if(event !== "walletTransaction"){
-              return;
-            }
+            // if(event !== "walletTransaction"){
+            //   return;
+            // }
             
             const [data] = args;
 
@@ -122,7 +122,7 @@ export const walletApi = baseApi.injectEndpoints({
 
           handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ITransfer, string]) => {
 
-            if(event !== "allStat"){
+            if(event !== "allStat" || event !== "depth"){
               console.log("event transfer", event, args);
             }
             
@@ -130,9 +130,9 @@ export const walletApi = baseApi.injectEndpoints({
               return;
             }
 
-            if(event !== "walletTransfer"){
-              return;
-            }
+            // if(event !== "walletTransfer"){
+            //   return;
+            // }
             
             const [data] = args;
 
@@ -175,7 +175,7 @@ export const walletApi = baseApi.injectEndpoints({
       providesTags: ['wallet_whitelist'],
     }),
     addWhitelist: builder.mutation<IGetWhiteList, IAddWhitelistArgs>({
-      queryFn: async ({ data }: IAddWhitelistArgs): IQueryFuncResult<IGetWhiteList> => {
+      queryFn: async ({ data }): IQueryFuncResult<IGetWhiteList> => {
         const client = getSdkClient();
         return await withErrorHandling(() => client.addWhitelist(data));
       },
