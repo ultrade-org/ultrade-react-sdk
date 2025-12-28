@@ -56,6 +56,10 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
 
           handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ISocketData, string]) => {
             
+            if(event !== "codexBalances") {
+             return;
+            }
+
             if(!args && args?.length) {
               return;
             }

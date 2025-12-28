@@ -1,20 +1,22 @@
 import { ACTION_TYPE, ITransaction, ITransfer, OperationStatusEnum } from "@ultrade/ultrade-js-sdk";
 import { equalsIgnoreCase } from "../helpers";
-import { IWalletState } from "@interface";
+import { IWalletTransactionsState, IWalletTransferState } from "@interface";
 
-export const saveUserWalletTransactions = (type: ACTION_TYPE, data: ITransaction[] | ITransfer[], prevWalletState: IWalletState): IWalletState => {
-  equalsIgnoreCase(type, ACTION_TYPE.T)
-    ? data.sort((a, b) => b.transferId - a.transferId)
-    : data.sort((a, b) => b.primaryId - a.primaryId)
-    
+export const saveUserWalletTransactions = (type: ACTION_TYPE, data: ITransaction[], prevWalletState: IWalletTransactionsState): IWalletTransactionsState => {
   return {
     ...prevWalletState,
-    [type]: data,
+    [type]: data.sort((a, b) => b.primaryId - a.primaryId),
+  }
+}
+
+export const saveUserWalletTransfer = (data: ITransfer[]): IWalletTransferState => {
+  return {
+    [ACTION_TYPE.T]: data.sort((a, b) => b.transferId - a.transferId)
   }
 }
 
 
-export const updateUserWalletTransactions = (newData: ITransaction, walletState: IWalletState): IWalletState => {
+export const updateUserWalletTransactions = (newData: ITransaction, walletState: IWalletTransactionsState): IWalletTransactionsState => {
   const txnType = newData.action_type;
   const walletTransactions = walletState[txnType];
   const existingTransactionIndex = walletTransactions.findIndex(transaction => transaction.primaryId === newData.primaryId);
@@ -36,7 +38,7 @@ export const updateUserWalletTransactions = (newData: ITransaction, walletState:
   }
 }
 
-export const updateTransferTransactions = (newData: ITransfer, walletState: IWalletState): IWalletState => {
+export const updateTransferTransactions = (newData: ITransfer, walletState: IWalletTransferState): IWalletTransferState => {
   const walletTransfers = walletState.transfer;
   const existingIndex = walletTransfers.findIndex(transaction => transaction.transferId === newData.transferId);
   // dispatch(updatePendingTxnsCount(newData, walletTransfers[existingIndex]));
@@ -53,7 +55,6 @@ export const updateTransferTransactions = (newData: ITransfer, walletState: IWal
   }
 
   return {
-    ...walletState,
     [ACTION_TYPE.T]: updatedWalletTransfers.sort((a, b) => b.transferId - a.transferId)
   }
 }

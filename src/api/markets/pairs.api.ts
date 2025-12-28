@@ -11,6 +11,7 @@ import { IGetPairListTransformedResult } from '@interface';
 import { marketsCommonApi } from './common.api';
 import { withErrorHandling } from '@helpers';
 import { pairHandler } from '@redux';
+import { initialPairListState } from '@consts';
 
 export const marketsPairsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -28,10 +29,13 @@ export const marketsPairsApi = baseApi.injectEndpoints({
 
         const originalData = originResult.data;
 
+        if (!Array.isArray(originalData)) {
+          return { data: initialPairListState };
+        }
+
         const prevPairListData = marketsPairsApi.endpoints.getPairList.select({selectedPairId})(state).data;
 
         const listOfPairs = prevPairListData?.listOfPairs ?? []
-
         const preparedResult = pairHandler({
           originalData,
           cachedSettings,
@@ -60,9 +64,9 @@ export const marketsPairsApi = baseApi.injectEndpoints({
 
           handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [IPairDto[], string]) => {
 
-            // if(event !== "allStat"){
-            //   return;
-            // }
+            if(event !== "allStat"){
+              return;
+            }
 
             if (!args && !args?.length) {
               return;
@@ -87,12 +91,15 @@ export const marketsPairsApi = baseApi.injectEndpoints({
             });
 
             updateCachedData((draft) => {
-
-              if (draft?.lastUpdateId === messageId) {
-                return
+              if (!draft) {
+                return initialPairListState;
               }
 
-              return preparedResult
+              if (draft.lastUpdateId === messageId) {
+                return;
+              }
+
+              return preparedResult;
             });
 
           });

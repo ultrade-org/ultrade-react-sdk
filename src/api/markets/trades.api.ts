@@ -48,9 +48,9 @@ export const marketsTradesApi = baseApi.injectEndpoints({
 
           handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [LastTradeEvent, string]) => {
             
-            // if(event !== "lastTrade") {
-            //   return;
-            // }
+            if(event !== "lastTrade") {
+              return;
+            }
 
             if(!args || !args[0].length) {
               return;

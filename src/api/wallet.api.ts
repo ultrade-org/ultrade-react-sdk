@@ -11,7 +11,6 @@ import {
   IGetWhiteList,
   ITradingKey,
   IRevokeTradingKeyResponse,
-  ACTION_TYPE,
   STREAMS,
 } from "@ultrade/ultrade-js-sdk";
 import { ITransferData, PaginatedResult, TradingKeyView } from "@ultrade/shared/browser/interfaces";
@@ -20,22 +19,22 @@ import baseApi from "./base.api";
 import { IQueryFuncResult, createValidatedTag, dataGuard } from "@utils";
 import RtkSdkAdaptor from "./sdk";
 import { withErrorHandling } from '@helpers';
-import { IWalletState } from "@interface";
-import { saveUserWalletTransactions, updateTransferTransactions, updateUserWalletTransactions } from "@redux";
-import { initialWalletState } from "@consts";
+import { IWalletTransactionsState, IWalletTransferState } from "@interface";
+import { saveUserWalletTransactions, saveUserWalletTransfer, updateTransferTransactions, updateUserWalletTransactions } from "@redux";
+import {  initialWalletTransactionsState, initialWalletTransferState } from "@consts";
 
 export const walletApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getWalletTransactions: builder.query<IWalletState, IGetWalletTransactionsArgs>({
+    getWalletTransactions: builder.query<IWalletTransactionsState, IGetWalletTransactionsArgs>({
       keepUnusedDataFor: 0,
-      queryFn: async ({ type, page, limit }: IGetWalletTransactionsArgs, { getState }): IQueryFuncResult<IWalletState> => {
+      queryFn: async ({ type, page, limit }: IGetWalletTransactionsArgs, { getState }): IQueryFuncResult<IWalletTransactionsState> => {
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getWalletTransactions(type, page, limit));
 
         if (!dataGuard(originResult)) {
           return originResult;
         }
 
-        const prevWalletState = walletApi.endpoints.getWalletTransactions.select({ type, page, limit })(getState() as any).data || initialWalletState;
+        const prevWalletState = walletApi.endpoints.getWalletTransactions.select({ type, page, limit })(getState() as any).data || initialWalletTransactionsState;
 
         const preparedResult = saveUserWalletTransactions(type, originResult.data.items, prevWalletState);
 
@@ -73,13 +72,10 @@ export const walletApi = baseApi.injectEndpoints({
 
             updateCachedData((draft) => {
               if (!draft) {
-                return initialWalletState;
+                return initialWalletTransactionsState;
               }
-              const result = updateUserWalletTransactions(data, draft);
 
-              draft.deposit = result.deposit;
-              draft.withdraw = result.withdraw;
-              draft.transfer = result.transfer;
+              return updateUserWalletTransactions(data, draft);
             });
           });
         } catch (error) {
@@ -90,18 +86,16 @@ export const walletApi = baseApi.injectEndpoints({
         RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
     }),
-    getTransfers: builder.query<IWalletState, IGetTransfersArgs>({
+    getTransfers: builder.query<IWalletTransferState, IGetTransfersArgs>({
       keepUnusedDataFor: 0,
-      queryFn: async ({ page, limit }: IGetTransfersArgs, { getState }): IQueryFuncResult<IWalletState> => {
+      queryFn: async ({ page, limit }: IGetTransfersArgs): IQueryFuncResult<IWalletTransferState> => {
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getTransfers(page, limit));
 
         if (!dataGuard(originResult)) {
           return originResult;
         }
 
-        const prevWalletState = walletApi.endpoints.getTransfers.select({ page, limit })(getState() as any).data || initialWalletState;
-
-        const preparedResult = saveUserWalletTransactions(ACTION_TYPE.T, originResult.data.items, prevWalletState);
+        const preparedResult = saveUserWalletTransfer(originResult.data.items);
 
         return { data: preparedResult };
       },
@@ -138,13 +132,9 @@ export const walletApi = baseApi.injectEndpoints({
 
             updateCachedData((draft) => {
               if (!draft) {
-                return initialWalletState;
+                return initialWalletTransferState;
               }
-              const result = updateTransferTransactions(data, draft);
-
-              draft.deposit = result.deposit;
-              draft.withdraw = result.withdraw;
-              draft.transfer = result.transfer;
+              return updateTransferTransactions(data, draft);
             });
           });
         } catch (error) {

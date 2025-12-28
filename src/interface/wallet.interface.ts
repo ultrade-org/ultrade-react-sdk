@@ -1,7 +1,8 @@
 import { ITransaction, ITransfer } from "@ultrade/ultrade-js-sdk";
-
-export interface IWalletState {
+export interface IWalletTransactionsState {
   deposit: ITransaction[],
   withdraw: ITransaction[],
-  transfer: ITransfer[]
-};
+}
+export interface IWalletTransferState {
+  transfer: ITransfer[],
+}

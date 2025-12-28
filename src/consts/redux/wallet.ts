@@ -1,7 +1,10 @@
-import { IWalletState } from "@interface";
+import { IWalletTransactionsState, IWalletTransferState } from "@interface";
 
-export const initialWalletState: IWalletState = {
+export const initialWalletTransactionsState: IWalletTransactionsState = {
   deposit: [],
   withdraw: [],
+}
+
+export const initialWalletTransferState: IWalletTransferState = {
   transfer: [],
 }
