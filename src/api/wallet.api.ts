@@ -61,9 +61,9 @@ export const walletApi = baseApi.injectEndpoints({
               console.log("event transactions", event, args);
             }
 
-            // if(event !== "walletTransaction"){
-            //   return;
-            // }
+            if(event !== "walletTransaction"){
+              return;
+            }
             
             if (!args || !args.length) {
               return;
@@ -72,6 +72,9 @@ export const walletApi = baseApi.injectEndpoints({
             const [data] = args;
 
             updateCachedData((draft) => {
+              if (!draft) {
+                return initialWalletState;
+              }
               const result = updateUserWalletTransactions(data, draft);
 
               draft.deposit = result.deposit;
@@ -134,6 +137,9 @@ export const walletApi = baseApi.injectEndpoints({
             const [data] = args;
 
             updateCachedData((draft) => {
+              if (!draft) {
+                return initialWalletState;
+              }
               const result = updateTransferTransactions(data, draft);
 
               draft.deposit = result.deposit;

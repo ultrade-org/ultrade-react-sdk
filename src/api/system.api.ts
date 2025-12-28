@@ -12,7 +12,7 @@ import RtkSdkAdaptor from "./sdk";
 import { withErrorHandling } from '@helpers';
 import { ISystemMaintenanceState, ISystemNotificationsState, ISystemVersionState } from "@interface";
 import { socialSettingsHandler, systemMaintenanceHandler, systemVersionHandler } from "@redux";
-import { initialSystemNotificationsState } from "@consts";
+import { initialSocialSettingsState, initialSystemMaintenanceState, initialSystemNotificationsState, initialSystemVersionState } from "@consts";
 
 interface IGetSystemVersionArgs {
   packageVersion: string;
@@ -50,9 +50,9 @@ export const systemApi = baseApi.injectEndpoints({
 
           handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [string, string]) => {
             
-            // if(event !== "version"){
-            //   return;
-            // }
+            if(event !== "version"){
+              return;
+            }
 
             if (!args || !args.length) {
               return;
@@ -61,6 +61,9 @@ export const systemApi = baseApi.injectEndpoints({
             const [version] = args;
 
             updateCachedData((draft) => {
+              if(!draft) {
+                return initialSystemVersionState;
+              }
               const preparedState = systemVersionHandler(version, packageVersion);
               draft.new_version = preparedState.new_version;
             });
@@ -101,9 +104,9 @@ export const systemApi = baseApi.injectEndpoints({
 
           handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ISystemMaintenanceState, string]) => {
           
-            // if(event !== "maintenance"){
-            //   return;
-            // }
+            if(event !== "maintenance"){
+              return;
+            }
             
             if (!args || !args.length) {
               return;
@@ -112,6 +115,9 @@ export const systemApi = baseApi.injectEndpoints({
             const [data] = args;
 
             updateCachedData((draft) => {
+              if(!draft) {
+                return initialSystemMaintenanceState;
+              }
               const result = systemMaintenanceHandler(data);
 
               draft.maintenance_mode = result.maintenance_mode;
@@ -147,9 +153,9 @@ export const systemApi = baseApi.injectEndpoints({
 
           handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ISocialSettings, string]) => {
           
-            // if(event !== "pointSystemSettingsUpdate"){
-            //   return;
-            // }
+            if(event !== "pointSystemSettingsUpdate"){
+              return;
+            }
             
             if (!args || !args.length) {
               return;
@@ -157,7 +163,12 @@ export const systemApi = baseApi.injectEndpoints({
         
             const [data] = args;
 
-            updateCachedData((draft) => socialSettingsHandler(data, draft));
+            updateCachedData((draft) => {
+              if(!draft) {
+                return initialSocialSettingsState;
+              }
+              return socialSettingsHandler(data, draft);
+            });
           });
         } catch (error) {
           console.error('Error loading cache data:', error);
@@ -208,6 +219,9 @@ export const systemApi = baseApi.injectEndpoints({
             const [data] = args;
 
             updateCachedData((draft) => {
+              if(!draft) {
+                return initialSystemNotificationsState;
+              }
               draft.notifications = [data, ...draft.notifications];
               draft.notificationsUnreadCount = draft.notificationsUnreadCount + 1;
             });
@@ -224,6 +238,9 @@ export const systemApi = baseApi.injectEndpoints({
     readNotifications: builder.mutation<UpdateUserNotificationDto[], UpdateUserNotificationDto[]>({
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
        const updateQuery = dispatch(systemApi.util.updateQueryData('getNotifications', undefined, (draft) => {
+          if(!draft) {
+            return initialSystemNotificationsState;
+          }
           const allNotificationsRead = draft.notifications.map(e => { 
             return { ...e, status: NotificationStatusEnum.READ }
           });
