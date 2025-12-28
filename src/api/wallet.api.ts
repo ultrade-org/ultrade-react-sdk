@@ -17,7 +17,8 @@ import {
 import { ITransferData, PaginatedResult, TradingKeyView } from "@ultrade/shared/browser/interfaces";
 
 import baseApi from "./base.api";
-import { IQueryFuncResult, getSdkClient, createValidatedTag, dataGuard } from "@utils";
+import { IQueryFuncResult, createValidatedTag, dataGuard } from "@utils";
+import RtkSdkAdaptor from "./sdk";
 import { withErrorHandling } from '@helpers';
 import { IWalletState } from "@interface";
 import { saveUserWalletTransactions, updateTransferTransactions, updateUserWalletTransactions } from "@redux";
@@ -28,9 +29,7 @@ export const walletApi = baseApi.injectEndpoints({
     getWalletTransactions: builder.query<IWalletState, IGetWalletTransactionsArgs>({
       keepUnusedDataFor: 0,
       queryFn: async ({ type, page, limit }: IGetWalletTransactionsArgs, { getState }): IQueryFuncResult<IWalletState> => {
-        const client = getSdkClient();
-
-        const originResult = await withErrorHandling(() => client.getWalletTransactions(type, page, limit));
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getWalletTransactions(type, page, limit));
 
         if (!dataGuard(originResult)) {
           return originResult;
@@ -48,8 +47,7 @@ export const walletApi = baseApi.injectEndpoints({
       async onCacheEntryAdded(args, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         let handlerId: number | null = null;
         const state = getState() as any;
-        const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.WALLET_TRANSACTIONS], state.user.selectedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.WALLET_TRANSACTIONS], state.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
@@ -58,18 +56,19 @@ export const walletApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ITransaction, string]) => {
-            if(event !== "allStat" || event !== "depth"){
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ITransaction, string]) => {
+            if(event !== "allStat" && event !== "depth"){
               console.log("event transactions", event, args);
-            }
-            if (!args || !args.length) {
-              return;
             }
 
             // if(event !== "walletTransaction"){
             //   return;
             // }
             
+            if (!args || !args.length) {
+              return;
+            }
+
             const [data] = args;
 
             updateCachedData((draft) => {
@@ -85,14 +84,13 @@ export const walletApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
     }),
     getTransfers: builder.query<IWalletState, IGetTransfersArgs>({
       keepUnusedDataFor: 0,
       queryFn: async ({ page, limit }: IGetTransfersArgs, { getState }): IQueryFuncResult<IWalletState> => {
-        const client = getSdkClient();
-        const originResult = await withErrorHandling(() => client.getTransfers(page, limit));
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getTransfers(page, limit));
 
         if (!dataGuard(originResult)) {
           return originResult;
@@ -110,8 +108,7 @@ export const walletApi = baseApi.injectEndpoints({
       async onCacheEntryAdded(args, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         let handlerId: number | null = null;
         const state = getState() as any;
-        const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.WALLET_TRANSACTIONS], state.user.selectedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.WALLET_TRANSACTIONS], state.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
@@ -120,20 +117,20 @@ export const walletApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ITransfer, string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ITransfer, string]) => {
 
-            if(event !== "allStat" || event !== "depth"){
+            if(event !== "allStat" && event !== "depth"){
               console.log("event transfer", event, args);
             }
             
-            if (!args || !args.length) {
+            if(event !== "walletTransfer"){
               return;
             }
 
-            // if(event !== "walletTransfer"){
-            //   return;
-            // }
-            
+            if (!args || !args.length) {
+              return;
+            }
+   
             const [data] = args;
 
             updateCachedData((draft) => {
@@ -149,65 +146,75 @@ export const walletApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
     }),
     transfer: builder.mutation<ITransfer, ITransferData>({
       queryFn: async (data: ITransferData): IQueryFuncResult<ITransfer> => {
-        const client = getSdkClient();
-        const originResult = await withErrorHandling(() => client.transfer(data));
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.transfer(data));
         return originResult;
       },
       invalidatesTags: ['wallet_transfers'],
     }),
     getPendingTransactions: builder.query<IPendingTxn[], void>({
       queryFn: async (): IQueryFuncResult<IPendingTxn[]> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.getPendingTransactions());
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getPendingTransactions());
       },
       providesTags: ['wallet_pending_transactions'],
     }),
     getWhitelist: builder.query<PaginatedResult<IGetWhiteList>, void>({
       queryFn: async (): IQueryFuncResult<PaginatedResult<IGetWhiteList>> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.getWhitelist());
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getWhitelist());
       },
       providesTags: ['wallet_whitelist'],
     }),
     addWhitelist: builder.mutation<IGetWhiteList, IAddWhitelistArgs>({
       queryFn: async ({ data }): IQueryFuncResult<IGetWhiteList> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.addWhitelist(data));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.addWhitelist(data));
       },
       invalidatesTags: ['wallet_whitelist'],
     }),
     deleteWhitelist: builder.mutation<void, IDeleteWhitelistArgs>({
       queryFn: async ({ whitelistId }: IDeleteWhitelistArgs): IQueryFuncResult<void> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.deleteWhitelist(whitelistId));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.deleteWhitelist(whitelistId));
       },
       invalidatesTags: ['wallet_whitelist'],
     }),
     getTradingKeys: builder.query<ITradingKey, void>({
       queryFn: async (): IQueryFuncResult<ITradingKey> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.getTradingKeys());
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getTradingKeys());
       },
       providesTags: ['wallet_trading_keys'],
     }),
     addTradingKey: builder.mutation<TradingKeyView, IAddTradingKeyArgs>({
       queryFn: async ({ data }: IAddTradingKeyArgs): IQueryFuncResult<TradingKeyView> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.addTradingKey(data));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.addTradingKey(data));
       },
       invalidatesTags: ['wallet_trading_keys'],
     }),
     revokeTradingKey: builder.mutation<IRevokeTradingKeyResponse, IRevokeTradingKeyArgs>({
       queryFn: async ({ data }: IRevokeTradingKeyArgs): IQueryFuncResult<IRevokeTradingKeyResponse> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.revokeTradingKey(data));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.revokeTradingKey(data));
       },
       invalidatesTags: ['wallet_trading_keys'],
     }),
   }),
 });
+
+export const {
+  useGetWalletTransactionsQuery,
+  useGetTransfersQuery,
+  useGetPendingTransactionsQuery,
+  useGetWhitelistQuery,
+  useGetTradingKeysQuery,
+  useLazyGetWalletTransactionsQuery,
+  useLazyGetTransfersQuery,
+  useLazyGetPendingTransactionsQuery,
+  useLazyGetWhitelistQuery,
+  useLazyGetTradingKeysQuery,
+  useTransferMutation,
+  useAddWhitelistMutation,
+  useDeleteWhitelistMutation,
+  useAddTradingKeyMutation,
+  useRevokeTradingKeyMutation,
+} = walletApi;

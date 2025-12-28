@@ -1,7 +1,8 @@
 import { CodexBalanceDto, IPair, STREAMS } from "@ultrade/ultrade-js-sdk";
 
-import { IQueryFuncResult, dataGuard, getSdkClient } from "@utils";
+import { IQueryFuncResult, dataGuard } from "@utils";
 import baseApi from "../base.api";
+import RtkSdkAdaptor from "../sdk";
 import {  withErrorHandling } from '@helpers';
 import { IDepositBalanceTransformedResult, IExchangeAssetsTransformedResult } from "@interface";
 import { depositBalanceHandler, mapAsset, prepareAssets, saveExchangeAssetsHandler, updateExchangeAssetsHandler } from "@redux";
@@ -16,8 +17,7 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
     getBalances: builder.query<IDepositBalanceTransformedResult, IPair["pair_key"]>({
       queryFn: async (pairKey, { getState, dispatch }): IQueryFuncResult<IDepositBalanceTransformedResult> => {
 
-        const client = getSdkClient();
-        const originResult = await withErrorHandling(() => client.getBalances());
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getBalances());
         
         if (!dataGuard(originResult)) {
           return originResult;
@@ -43,10 +43,9 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
 
         let handlerId: number | null = null;
         const state = getState() as any;
-        const rtkClient = getSdkClient();
         const preparedPair = state.user.selectedPair as IPair
 
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.CODEX_BALANCES], preparedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.CODEX_BALANCES], preparedPair?.pair_key);
 
         if (!subscribeOptions) {
           return;
@@ -55,7 +54,7 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ISocketData, string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ISocketData, string]) => {
             
             if(!args && args?.length) {
               return;
@@ -76,15 +75,14 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
     }),
 
     getCodexAssets: builder.query<IExchangeAssetsTransformedResult, void>({
       queryFn: async (): IQueryFuncResult<IExchangeAssetsTransformedResult> => {
 
-        const client = getSdkClient();
-        const originResult = await withErrorHandling(() => client.getCodexAssets());
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getCodexAssets());
         
         if (!dataGuard(originResult)) {
           return originResult;
@@ -97,19 +95,14 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
 
         let handlerId: number | null = null;
         const state = getState() as any
-        const rtkClient = getSdkClient();
         const preparedPair = state.user.selectedPair as IPair
 
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.CODEX_BALANCES], preparedPair?.pair_key);
-
-        if (!subscribeOptions) {
-          return;
-        }
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.CODEX_BALANCES], preparedPair?.pair_key);
 
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ISocketData, string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ISocketData, string]) => {
 
             if(!args) {
               return
@@ -130,8 +123,15 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
     }),
   }),
 });
+
+export const {
+  useGetBalancesQuery,
+  useGetCodexAssetsQuery,
+  useLazyGetBalancesQuery,
+  useLazyGetCodexAssetsQuery,
+} = marketsBalancesApi;

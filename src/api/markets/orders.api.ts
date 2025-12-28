@@ -15,9 +15,10 @@ import {
   UserTradeEvent,
 } from "@ultrade/ultrade-js-sdk";
 
-import { IQueryFuncResult, dataGuard, getSdkClient } from "@utils";
+import { IQueryFuncResult, dataGuard } from "@utils";
 import { withErrorHandling } from '@helpers';
 import baseApi from "../base.api";
+import RtkSdkAdaptor from "../sdk";
 import { IUserOrders } from "@interface";
 import { IOrderSocketActionMap, handleSocketOrder, newTradeForOrderHandler, saveUserOrders } from "@redux";
 import { initialUserOrdersState } from "@consts";
@@ -40,8 +41,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
     getOrders: builder.query<IUserOrders, IGetOrdersArgs>({
       keepUnusedDataFor: 0,
       queryFn: async ({symbol, status, startTime, endTime, limit }: IGetOrdersArgs, { getState }): IQueryFuncResult<IUserOrders> => {
-        const client = getSdkClient();
-        const originResult = await withErrorHandling(() => client.getOrders(symbol, status, limit, endTime, startTime));
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getOrders(symbol, status, limit, endTime, startTime));
         
         if (!dataGuard(originResult)) {
           return originResult;
@@ -64,8 +64,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
       async onCacheEntryAdded({ symbol }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         let handlerId: number | null = null;
         const state = getState() as any;
-        const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.ORDERS, STREAMS.TRADES], symbol ? symbol : state.user.selectedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ORDERS, STREAMS.TRADES], symbol ? symbol : state.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
@@ -74,7 +73,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: IOrdersSocketArgs) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: IOrdersSocketArgs) => {
             if(!args) {
               return;
             }
@@ -122,35 +121,41 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
     }),
     createSpotOrder: builder.mutation<IOrderDto, CreateSpotOrderArgs>({
       queryFn: async (data: CreateSpotOrderArgs): IQueryFuncResult<IOrderDto> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.createSpotOrder(data));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.createSpotOrder(data));
       },
     }),
     cancelOrder: builder.mutation<ICancelOrderResponse, ICancelOrderArgs>({
       queryFn: async (data: ICancelOrderArgs): IQueryFuncResult<ICancelOrderResponse> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.cancelOrder(data));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.cancelOrder(data));
       },
       invalidatesTags: (result, error, { orderId }) => [{ type: 'markets_orders', id: orderId }],
     }),
     getOrderById: builder.query<Order, IGetOrderByIdArgs>({
       queryFn: async ({ orderId }: IGetOrderByIdArgs): IQueryFuncResult<Order> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.getOrderById(orderId));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getOrderById(orderId));
       },
       providesTags: (result, error, { orderId }) => [{ type: 'markets_orders', id: orderId }],
     }),
     cancelMultipleOrders: builder.mutation<ICancelMultipleOrdersResponse, ICancelMultipleOrdersArgs>({
       queryFn: async (data: ICancelMultipleOrdersArgs): IQueryFuncResult<ICancelMultipleOrdersResponse> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.cancelMultipleOrders(data));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.cancelMultipleOrders(data));
       },
       invalidatesTags: (result, error, { orderIds }) => orderIds?.map(orderId => ({ type: 'markets_orders', id: orderId })) || [],
     }),
   }),
 });
+
+export const {
+  useGetOrdersQuery,
+  useGetOrderByIdQuery,
+  useLazyGetOrdersQuery,
+  useLazyGetOrderByIdQuery,
+  useCreateSpotOrderMutation,
+  useCancelOrderMutation,
+  useCancelMultipleOrdersMutation
+} = marketsOrdersApi;

@@ -1,12 +1,12 @@
 import { IGetDepth, IGetDepthArgs, IPair, STREAMS } from '@ultrade/ultrade-js-sdk';
 
-import { IQueryFuncResult, dataGuard, getSdkClient } from '@utils';
+import { IQueryFuncResult, dataGuard } from '@utils';
 import baseApi from '../base.api';
+import RtkSdkAdaptor from "../sdk";
 import { IGetDepthTransformedResult } from '@interface';
 import { initialDepthState } from '@consts';
 import { hasAllArgs, withErrorHandling } from '@helpers';
 import { depthHandler } from '@redux';
-
 
 export const marketsDepthApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -16,9 +16,7 @@ export const marketsDepthApi = baseApi.injectEndpoints({
           return { data: initialDepthState };
         }
 
-        const client = getSdkClient();
-
-        const originResult = await withErrorHandling(() => client.getDepth(symbol, depth));
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getDepth(symbol, depth));
 
         if (!dataGuard(originResult)) {
           return originResult;
@@ -33,10 +31,9 @@ export const marketsDepthApi = baseApi.injectEndpoints({
       async onCacheEntryAdded({ symbol, baseDecimal }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         let handlerId: number | null = null;
         const state = getState() as any
-        const rtkClient = getSdkClient();
         const preparedPair = state.user.selectedPair as IPair
 
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.DEPTH], preparedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.DEPTH], preparedPair?.pair_key);
 
         if (!subscribeOptions) {
           return;
@@ -45,7 +42,7 @@ export const marketsDepthApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [IGetDepth, string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [IGetDepth, string]) => {
 
             // if(event !== "depth"){
             //   return;
@@ -85,8 +82,13 @@ export const marketsDepthApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
     }),
   }),
 });
+
+export const {
+  useGetDepthQuery,
+  useLazyGetDepthQuery,
+} = marketsDepthApi;

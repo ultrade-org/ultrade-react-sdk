@@ -1,15 +1,15 @@
 import { IGetHistoryArgs, IGetHistoryResponse } from "@ultrade/ultrade-js-sdk";
 
-import { IQueryFuncResult, createValidatedTag, getSdkClient } from "@utils";
+import { IQueryFuncResult, createValidatedTag } from "@utils";
 import baseApi from "../base.api";
+import RtkSdkAdaptor from "../sdk";
 import { withErrorHandling } from '@helpers';
 
 export const marketsHistoryApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getHistory: builder.query<IGetHistoryResponse, IGetHistoryArgs>({
       queryFn: async ({ symbol, interval, startTime, endTime, limit, page }: IGetHistoryArgs): IQueryFuncResult<IGetHistoryResponse> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.getHistory(symbol, interval, startTime, endTime, limit, page));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getHistory(symbol, interval, startTime, endTime, limit, page));
       },
       providesTags: (result, error, { symbol, interval, startTime, endTime, limit, page }) => [
         { type: 'markets_history', id: createValidatedTag([symbol, interval, startTime, endTime, limit, page]) }
@@ -17,4 +17,9 @@ export const marketsHistoryApi = baseApi.injectEndpoints({
     }),
   }),
 });
+
+export const {
+  useGetHistoryQuery,
+  useLazyGetHistoryQuery,
+} = marketsHistoryApi;
 

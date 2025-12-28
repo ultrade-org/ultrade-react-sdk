@@ -7,7 +7,8 @@ import {
 import { NotificationStatusEnum } from "@ultrade/shared/browser/enums";
 
 import baseApi from "./base.api";
-import { IQueryFuncResult, getSdkClient, dataGuard } from "@utils";
+import { IQueryFuncResult, dataGuard } from "@utils";
+import RtkSdkAdaptor from "./sdk";
 import { withErrorHandling } from '@helpers';
 import { ISystemMaintenanceState, ISystemNotificationsState, ISystemVersionState } from "@interface";
 import { socialSettingsHandler, systemMaintenanceHandler, systemVersionHandler } from "@redux";
@@ -23,9 +24,7 @@ export const systemApi = baseApi.injectEndpoints({
     getVersion: builder.query<ISystemVersionState, IGetSystemVersionArgs>({
       keepUnusedDataFor: Number.POSITIVE_INFINITY,
       queryFn: async ({ packageVersion }: IGetSystemVersionArgs): IQueryFuncResult<ISystemVersionState> => {
-        const client = getSdkClient();
-
-        const originResult = await withErrorHandling(() => client.getVersion());
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getVersion());
 
         if (!dataGuard(originResult)) {
           return originResult;
@@ -40,8 +39,7 @@ export const systemApi = baseApi.injectEndpoints({
       async onCacheEntryAdded({ packageVersion }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         let handlerId: number | null = null;
         const state = getState() as any;
-        const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.SYSTEM], state.user.selectedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.SYSTEM], state.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
@@ -50,7 +48,7 @@ export const systemApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [string, string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [string, string]) => {
             
             // if(event !== "version"){
             //   return;
@@ -72,14 +70,13 @@ export const systemApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
     }),
     getMaintenance: builder.query<ISystemMaintenanceState, void>({
       keepUnusedDataFor: Number.POSITIVE_INFINITY,
       queryFn: async (): IQueryFuncResult<ISystemMaintenanceState> => {
-        const client = getSdkClient();
-        const originResult = await withErrorHandling(() => client.getMaintenance());
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getMaintenance());
 
         if (!dataGuard(originResult)) {
           return originResult;
@@ -93,8 +90,7 @@ export const systemApi = baseApi.injectEndpoints({
       async onCacheEntryAdded(_, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         let handlerId: number | null = null;
         const state = getState() as any;
-        const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.SYSTEM], state.user.selectedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.SYSTEM], state.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
@@ -103,7 +99,7 @@ export const systemApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ISystemMaintenanceState, string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ISystemMaintenanceState, string]) => {
           
             // if(event !== "maintenance"){
             //   return;
@@ -127,7 +123,7 @@ export const systemApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
     }),
     getSocialSettings: builder.query<ISocialSettings, void>({
@@ -135,14 +131,12 @@ export const systemApi = baseApi.injectEndpoints({
         return socialSettingsHandler(responseData, currentCacheData);
       },
       queryFn: async (): IQueryFuncResult<ISocialSettings> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.getSocialSettings());
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getSocialSettings());
       },
       async onCacheEntryAdded(_, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         let handlerId: number | null = null;
         const state = getState() as any;
-        const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.POINT_SYSTEM_SETTINGS_UPDATE], state.user.selectedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.POINT_SYSTEM_SETTINGS_UPDATE], state.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
@@ -151,7 +145,7 @@ export const systemApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [ISocialSettings, string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ISocialSettings, string]) => {
           
             // if(event !== "pointSystemSettingsUpdate"){
             //   return;
@@ -170,14 +164,13 @@ export const systemApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
       providesTags: ['social_settings'],
     }),
     getNotifications: builder.query<ISystemNotificationsState, void>({
       queryFn: async (): IQueryFuncResult<ISystemNotificationsState> => {
-        const client = getSdkClient();
-        const [notificationsResult, notificationsUnreadCountResult] = await Promise.all([withErrorHandling(() => client.getNotifications()), withErrorHandling(() => client.getNotificationsUnreadCount())]);
+        const [notificationsResult, notificationsUnreadCountResult] = await Promise.all([withErrorHandling(() => RtkSdkAdaptor.originalSdk.getNotifications()), withErrorHandling(() => RtkSdkAdaptor.originalSdk.getNotificationsUnreadCount())]);
         
         if (!dataGuard(notificationsResult) || !dataGuard(notificationsUnreadCountResult)) {
           return { data: initialSystemNotificationsState};
@@ -193,8 +186,7 @@ export const systemApi = baseApi.injectEndpoints({
       async onCacheEntryAdded(_, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         let handlerId: number | null = null;
         const state = getState() as any;
-        const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.NEW_NOTIFICATION], state.user.selectedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.NEW_NOTIFICATION], state.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
@@ -203,10 +195,11 @@ export const systemApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [UserNotification, string]) => {
-            // if(event !== "new_notification"){
-            //   return;
-            // }
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [UserNotification, string]) => {
+            
+            if(event !== "new_notification"){
+              return;
+            }
 
             if (!args || !args.length) {
               return;
@@ -224,7 +217,7 @@ export const systemApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
       providesTags: ['system_notifications'],
     }),
@@ -245,8 +238,6 @@ export const systemApi = baseApi.injectEndpoints({
         }
       },
       queryFn: async (notifications: UserNotification[]): IQueryFuncResult<UpdateUserNotificationDto[]> => {
-        const client = getSdkClient();
-        
         const unreadNotifications: UpdateUserNotificationDto[] = notifications
         .filter(n => n.status === NotificationStatusEnum.UNREAD)
         .map(({ id, globalNotificationId } ) => {
@@ -257,8 +248,20 @@ export const systemApi = baseApi.injectEndpoints({
           return { data: [] };
         }
 
-        return await withErrorHandling(() => client.readNotifications(unreadNotifications));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.readNotifications(unreadNotifications));
       },
     }),
   }),
 });
+
+export const {
+  useGetVersionQuery,
+  useGetMaintenanceQuery,
+  useGetSocialSettingsQuery,
+  useGetNotificationsQuery,
+  useLazyGetVersionQuery,
+  useLazyGetMaintenanceQuery,
+  useLazyGetSocialSettingsQuery,
+  useLazyGetNotificationsQuery,
+  useReadNotificationsMutation,
+} = systemApi;

@@ -1,7 +1,8 @@
 import { IPair, ISettingsState, STREAMS, SettingsInit } from '@ultrade/ultrade-js-sdk';
 
-import { IQueryFuncResult, dataGuard, getSdkClient } from '@utils';
+import { IQueryFuncResult, dataGuard } from '@utils';
 import baseApi from '../base.api';
+import RtkSdkAdaptor from "../sdk";
 import { withErrorHandling } from '@helpers';
 import { settingsHandler } from '@redux';
 import { initialSettingsState } from '@consts';
@@ -10,9 +11,7 @@ export const marketsCommonApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getSettings: builder.query<ISettingsState, void>({
       queryFn: async (): IQueryFuncResult<ISettingsState> => {
-        const client = getSdkClient();
-
-        const originResult = await withErrorHandling(() => client.getSettings());
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getSettings());
 
         if (!dataGuard(originResult)) {
           return originResult;
@@ -26,7 +25,7 @@ export const marketsCommonApi = baseApi.injectEndpoints({
 
       async onCacheEntryAdded(args, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         // let handlerId: number | null = null;
-        // const rtkClient = getSdkClient();
+        // const rtkClient = originalSdk;
         // const state = getState() as any
 
         // const preparedPair = state.user.selectedPair as IPair
@@ -82,3 +81,8 @@ export const marketsCommonApi = baseApi.injectEndpoints({
     }),
   }),
 });
+
+export const {
+  useGetSettingsQuery,
+  useLazyGetSettingsQuery,
+} = marketsCommonApi;

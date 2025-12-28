@@ -4,9 +4,9 @@ import {
   IQueryFuncResult,
   createPairListTag,
   dataGuard,
-  getSdkClient,
 } from '@utils';
 import baseApi from '../base.api';
+import RtkSdkAdaptor from "../sdk";
 import { IGetPairListTransformedResult } from '@interface';
 import { marketsCommonApi } from './common.api';
 import { withErrorHandling } from '@helpers';
@@ -18,10 +18,9 @@ export const marketsPairsApi = baseApi.injectEndpoints({
 
       queryFn: async ({ selectedPairId }, { getState }): IQueryFuncResult<IGetPairListTransformedResult> => {
         const state = getState() as any;
-        const client = getSdkClient();
         const cachedSettings = marketsCommonApi.endpoints.getSettings.select()(state).data;
 
-        const originResult = await withErrorHandling(() => client.getPairList(cachedSettings.companyId));
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getPairList(cachedSettings.companyId));
 
         if (!dataGuard(originResult)) {
           return originResult;
@@ -47,10 +46,9 @@ export const marketsPairsApi = baseApi.injectEndpoints({
         const state = getState() as any;
 
         let handlerId: number | null = null;
-        const rtkClient = getSdkClient();
         const preparedPair = state.user.selectedPair as IPair
 
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.ALL_STAT], preparedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ALL_STAT], preparedPair?.pair_key);
 
 
         if (!subscribeOptions) {
@@ -60,7 +58,7 @@ export const marketsPairsApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [IPairDto[], string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [IPairDto[], string]) => {
 
             // if(event !== "allStat"){
             //   return;
@@ -103,8 +101,13 @@ export const marketsPairsApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
     }),
   }),
 });
+
+export const {
+  useGetPairListQuery,
+  useLazyGetPairListQuery,
+} = marketsPairsApi;

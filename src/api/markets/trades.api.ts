@@ -1,19 +1,18 @@
 import { IGetLastTradesArgs, IGetLastTrades, STREAMS, LastTradeEvent, IPair } from "@ultrade/ultrade-js-sdk";
 
-import { IQueryFuncResult, dataGuard, getSdkClient } from "@utils";
+import { IQueryFuncResult, dataGuard } from "@utils";
 import baseApi from "../base.api";
+import RtkSdkAdaptor from "../sdk";
 import { withErrorHandling } from '@helpers';
 import { IGetLastTradesTransformedResult } from "@interface";
 import { saveChartTrade, saveLastTrades, saveSocketTradeHandler } from "@redux";
 import { initialTradesState } from "@consts";
 
-
 export const marketsTradesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getLastTrades: builder.query<IGetLastTradesTransformedResult, IGetLastTradesArgs>({
       queryFn: async ({ symbol }: IGetLastTradesArgs, { getState, dispatch }): IQueryFuncResult<IGetLastTradesTransformedResult> => {
-        const client = getSdkClient();
-        const originResult = await withErrorHandling(() => client.getLastTrades(symbol));
+        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getLastTrades(symbol));
 
         if (!dataGuard(originResult)) {
           return originResult;
@@ -38,8 +37,7 @@ export const marketsTradesApi = baseApi.injectEndpoints({
       async onCacheEntryAdded({ symbol }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState, dispatch }) {
         let handlerId: number | null = null;
         const state = getState() as any;
-        const rtkClient = getSdkClient();
-        const subscribeOptions = rtkClient.getSocketSubscribeOptions([STREAMS.ORDERS], symbol ? symbol : state.user.selectedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ORDERS], symbol ? symbol : state.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
@@ -48,7 +46,7 @@ export const marketsTradesApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = rtkClient.subscribe(subscribeOptions, (event, args: [LastTradeEvent, string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [LastTradeEvent, string]) => {
             
             // if(event !== "lastTrade") {
             //   return;
@@ -97,8 +95,13 @@ export const marketsTradesApi = baseApi.injectEndpoints({
         }
 
         await cacheEntryRemoved;
-        rtkClient.unsubscribe(handlerId);
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
       },
     }),
   }),
 });
+
+export const {
+  useGetLastTradesQuery,
+  useLazyGetLastTradesQuery,
+} = marketsTradesApi;

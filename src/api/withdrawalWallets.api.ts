@@ -6,25 +6,23 @@ import {
   IDeleteWithdrawalWalletArgs,
 } from '@ultrade/ultrade-js-sdk';
 
-import { IQueryFuncResult, getSdkClient } from '@utils';
+import { IQueryFuncResult } from '@utils';
 import baseApi from './base.api';
+import RtkSdkAdaptor from "./sdk";
 import { withErrorHandling } from '@helpers';
-
 
 export const withdrawalWalletsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getAllWithdrawalWallets: builder.query<ISafeWithdrawalWallets[], void>({
       queryFn: async (): IQueryFuncResult<ISafeWithdrawalWallets[]> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.getAllWithdrawalWallets());
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getAllWithdrawalWallets());
       },
       providesTags: ['withdrawal_wallets'],
     }),
 
     getWalletByAddress: builder.query<ISafeWithdrawalWallets, IGetWithdrawalWalletByAddressArgs>({
       queryFn: async ({ address }: IGetWithdrawalWalletByAddressArgs): IQueryFuncResult<ISafeWithdrawalWallets> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.getWithdrawalWalletByAddress(address));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getWithdrawalWalletByAddress(address));
       },
       providesTags: (result, error, { address }) => [
         { type: 'withdrawal_wallets', id: address }
@@ -33,24 +31,21 @@ export const withdrawalWalletsApi = baseApi.injectEndpoints({
 
     createWithdrawalWallet: builder.mutation<ISafeWithdrawalWallets, ICreateWithdrawalWalletArgs>({
       queryFn: async ({ body }: ICreateWithdrawalWalletArgs): IQueryFuncResult<ISafeWithdrawalWallets> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.createWithdrawalWallet(body));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.createWithdrawalWallet(body));
       },
       invalidatesTags: ['withdrawal_wallets'],
     }),
 
     updateWithdrawalWallet: builder.mutation<boolean, IUpdateWithdrawalWalletArgs>({
       queryFn: async ({ params }: IUpdateWithdrawalWalletArgs): IQueryFuncResult<boolean> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.updateWithdrawalWallet(params));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.updateWithdrawalWallet(params));
       },
       invalidatesTags: ['withdrawal_wallets'],
     }),
 
     deleteWithdrawalWallet: builder.mutation<boolean, IDeleteWithdrawalWalletArgs>({
       queryFn: async ({ address }: IDeleteWithdrawalWalletArgs): IQueryFuncResult<boolean> => {
-        const client = getSdkClient();
-        return await withErrorHandling(() => client.deleteWithdrawalWallet(address));
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.deleteWithdrawalWallet(address));
       },
       invalidatesTags: (result, error, { address }) => [
         { type: 'withdrawal_wallets', id: address },
@@ -59,3 +54,14 @@ export const withdrawalWalletsApi = baseApi.injectEndpoints({
     }),
   }),
 });
+
+export const {
+  useGetAllWithdrawalWalletsQuery,
+  useGetWalletByAddressQuery,
+  useCreateWithdrawalWalletMutation,
+  useUpdateWithdrawalWalletMutation,
+  useDeleteWithdrawalWalletMutation,
+  useLazyGetAllWithdrawalWalletsQuery,
+  useLazyGetWalletByAddressQuery,
+} = withdrawalWalletsApi;
+
