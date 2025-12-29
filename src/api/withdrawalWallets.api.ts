@@ -30,15 +30,15 @@ export const withdrawalWalletsApi = baseApi.injectEndpoints({
     }),
 
     createWithdrawalWallet: builder.mutation<ISafeWithdrawalWallets, ICreateWithdrawalWalletArgs>({
-      queryFn: async ({ body }: ICreateWithdrawalWalletArgs): IQueryFuncResult<ISafeWithdrawalWallets> => {
-        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.createWithdrawalWallet(body));
+      queryFn: async (data: ICreateWithdrawalWalletArgs): IQueryFuncResult<ISafeWithdrawalWallets> => {
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.createWithdrawalWallet(data));
       },
       invalidatesTags: ['withdrawal_wallets'],
     }),
 
     updateWithdrawalWallet: builder.mutation<boolean, IUpdateWithdrawalWalletArgs>({
-      queryFn: async ({ params }: IUpdateWithdrawalWalletArgs): IQueryFuncResult<boolean> => {
-        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.updateWithdrawalWallet(params));
+      queryFn: async (data: IUpdateWithdrawalWalletArgs): IQueryFuncResult<boolean> => {
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.updateWithdrawalWallet(data));
       },
       invalidatesTags: ['withdrawal_wallets'],
     }),

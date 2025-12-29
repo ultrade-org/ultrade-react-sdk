@@ -165,7 +165,7 @@ export const walletApi = baseApi.injectEndpoints({
       providesTags: ['wallet_whitelist'],
     }),
     addWhitelist: builder.mutation<IGetWhiteList, IAddWhitelistArgs>({
-      queryFn: async ({ data }): IQueryFuncResult<IGetWhiteList> => {
+      queryFn: async (data): IQueryFuncResult<IGetWhiteList> => {
         return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.addWhitelist(data));
       },
       invalidatesTags: ['wallet_whitelist'],
@@ -176,8 +176,8 @@ export const walletApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['wallet_whitelist'],
     }),
-    getTradingKeys: builder.query<ITradingKey, void>({
-      queryFn: async (): IQueryFuncResult<ITradingKey> => {
+    getTradingKeys: builder.query<ITradingKey[], void>({
+      queryFn: async (): IQueryFuncResult<ITradingKey[]> => {
         return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getTradingKeys());
       },
       providesTags: ['wallet_trading_keys'],

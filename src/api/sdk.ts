@@ -1,7 +1,4 @@
 import { Client, AuthCredentials, ClientOptions } from '@ultrade/ultrade-js-sdk';
-
-import { withdrawalWalletsApi, systemApi, walletApi, marketsApi } from '@api';
-
 export default class RtkSdkAdaptor extends Client {
 
   public static originalSdk: Client | null = null;
@@ -33,20 +30,5 @@ export default class RtkSdkAdaptor extends Client {
       );
     }
     return RtkSdkAdaptor.instance;
-  }
-
-
-  withdrawalWallets(): typeof withdrawalWalletsApi {
-    return withdrawalWalletsApi;
-  }
-
-  markets(): typeof marketsApi {
-    return marketsApi;
-  }
-  walletApi(): typeof walletApi {
-    return walletApi;
-  }
-  systemApi(): typeof systemApi {
-    return systemApi;
   }
 }
