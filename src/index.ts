@@ -7,4 +7,6 @@ export * from "@consts"
 export * from "@interface"
 export * from '@helpers';
 
+export { addTradesToOrder } from '@redux';
+
 export default RTKSDKAdaptor;

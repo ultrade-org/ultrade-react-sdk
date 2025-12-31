@@ -1,6 +1,7 @@
 import { IUserOrders } from "@interface";
+import { openOrdersAdapter, closeOrdersAdapter, getAllOpenOrders, getAllCloseOrders } from "@redux";
 
 export const initialUserOrdersState: IUserOrders = {
-  open: [],
-  close: [],
+  open: getAllOpenOrders(openOrdersAdapter.getInitialState()),
+  close: getAllCloseOrders(closeOrdersAdapter.getInitialState()),
 }

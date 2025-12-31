@@ -20,7 +20,7 @@ import { withErrorHandling } from '@helpers';
 import baseApi from "../base.api";
 import RtkSdkAdaptor from "../sdk";
 import { IUserOrders } from "@interface";
-import { IOrderSocketActionMap, handleSocketOrder, newTradeForOrderHandler, saveUserOrders } from "@redux";
+import { IOrderSocketActionMap, handleSocketOrder, newTradeForOrderHandler, saveUserOrders, scheduleOrderBackgroundUpdate } from "@redux";
 import { initialUserOrdersState } from "@consts";
 
 const openOrderStatus = OrderExecution[OrderExecutionType.open]
@@ -39,8 +39,7 @@ const orderSocketEventGuard = (event: string, args: IOrderSocketArgs | UserTrade
 export const marketsOrdersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getOrders: builder.query<IUserOrders, IGetOrdersArgs>({
-      keepUnusedDataFor: 0,
-      queryFn: async ({symbol, status, startTime, endTime, limit }: IGetOrdersArgs, { getState }): IQueryFuncResult<IUserOrders> => {
+      queryFn: async ({symbol, status, startTime, endTime, limit }: IGetOrdersArgs, { getState, dispatch }): IQueryFuncResult<IUserOrders> => {
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getOrders(symbol, status, limit, endTime, startTime));
         
         if (!dataGuard(originResult)) {
@@ -52,11 +51,18 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
         const listOfPairs = state.exchange.listOfPairs as IPair[];
         const orderHistoryTab = state.exchange.openHistoryTab as OrderExecutionType;
 
-        const cacheKey = { symbol, status: status === openOrderStatus ? openOrderStatus : closeOrderStatus, startTime, endTime, limit };
+        const baseCacheKey = { symbol, status: status === openOrderStatus ? openOrderStatus : closeOrderStatus, limit };
 
-        const prevOrdersState = marketsOrdersApi.endpoints.getOrders.select(cacheKey)(state).data || initialUserOrdersState;
+        const prevOrdersState = marketsOrdersApi.endpoints.getOrders.select(baseCacheKey)(state).data || initialUserOrdersState;
        
         const preparedResult = saveUserOrders(originResult.data, prevOrdersState, orderHistoryTab, listOfPairs);
+
+        if (endTime || startTime) {
+          dispatch(marketsOrdersApi.util.updateQueryData('getOrders', baseCacheKey, (draft) => {
+            draft.open = preparedResult.open;
+            draft.close = preparedResult.close;
+          }));
+        }
 
         return { data: preparedResult };
       },
@@ -115,6 +121,9 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
               draft.open = result.open;
               draft.close = result.close;
             });
+
+            const orderId = data[3];
+            scheduleOrderBackgroundUpdate(action, orderId, updateCachedData);
           });
         } catch (error) {
           console.error('Error loading cache data:', error);
