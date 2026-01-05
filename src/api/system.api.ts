@@ -5,12 +5,13 @@ import {
   UpdateUserNotificationDto,
 } from "@ultrade/ultrade-js-sdk";
 import { NotificationStatusEnum } from "@ultrade/shared/browser/enums";
+import { Notification } from "@ultrade/shared/browser/types";
 
 import baseApi from "./base.api";
 import { IQueryFuncResult, dataGuard } from "@utils";
 import RtkSdkAdaptor from "./sdk";
 import { withErrorHandling } from '@helpers';
-import { ISystemMaintenanceState, ISystemNotificationsState, ISystemVersionState } from "@interface";
+import { IMaintenanceSocketData, ISystemMaintenanceState, ISystemNotificationsState, ISystemVersionState } from "@interface";
 import { socialSettingsHandler, systemMaintenanceHandler, systemVersionHandler } from "@redux";
 import { initialSocialSettingsState, initialSystemMaintenanceState, initialSystemNotificationsState, initialSystemVersionState } from "@consts";
 
@@ -102,7 +103,7 @@ export const systemApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ISystemMaintenanceState, string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [IMaintenanceSocketData, string]) => {
           
             if(event !== "maintenance"){
               return;
@@ -112,13 +113,19 @@ export const systemApi = baseApi.injectEndpoints({
               return;
             }
         
-            const [data] = args;
+            const [socketData] = args;
 
             updateCachedData((draft) => {
               if(!draft) {
                 return initialSystemMaintenanceState;
               }
-              const result = systemMaintenanceHandler(data);
+              
+              const maintenanceData: ISystemMaintenanceState = {
+                maintenance_mode: socketData.mode,
+                scheduledDate: socketData.scheduledDate,
+              };
+              
+              const result = systemMaintenanceHandler(maintenanceData);
 
               draft.maintenance_mode = result.maintenance_mode;
               draft.scheduledDate = result.scheduledDate;
@@ -206,9 +213,8 @@ export const systemApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [UserNotification, string]) => {
-            
-            if(event !== "new_notification"){
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [Notification, string]) => {
+            if (event !== "new_notification") {
               return;
             }
 
@@ -216,13 +222,24 @@ export const systemApi = baseApi.injectEndpoints({
               return;
             }
 
-            const [data] = args;
+            const [socketData] = args;
 
             updateCachedData((draft) => {
-              if(!draft) {
+              if (!draft) {
                 return initialSystemNotificationsState;
               }
-              draft.notifications = [data, ...draft.notifications];
+              
+              const userNotification: UserNotification = {
+                id: socketData.id ?? 0,
+                globalNotificationId: socketData.globalNotificationId ?? 0,
+                priority: socketData.priority,
+                status: socketData.status,
+                type: socketData.type,
+                message: socketData.message,
+                createdAt: socketData.createdAt,
+              };
+              
+              draft.notifications = [userNotification, ...draft.notifications];
               draft.notificationsUnreadCount = draft.notificationsUnreadCount + 1;
             });
           });

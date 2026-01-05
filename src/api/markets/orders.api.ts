@@ -36,6 +36,18 @@ const orderSocketEventGuard = (event: string, args: IOrderSocketArgs | UserTrade
   return event === "userTrade";
 }
 
+const allOpenOrdersArgs: IGetOrdersArgs = {
+  symbol: null,
+  status: openOrderStatus,
+  limit: 50,
+}
+
+const allClosedOrdersArgs: IGetOrdersArgs = {
+  symbol: null,
+  status: closeOrderStatus,
+  limit: 50,
+}
+
 export const marketsOrdersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getOrders: builder.query<IUserOrders, IGetOrdersArgs>({
@@ -67,7 +79,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
         return { data: preparedResult };
       },
       providesTags: ['markets_orders'],
-      async onCacheEntryAdded({ symbol }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
+      async onCacheEntryAdded({ symbol }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState, dispatch }) {
         let handlerId: number | null = null;
         const state = getState() as any;
         const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ORDERS, STREAMS.TRADES], symbol ? symbol : state.user.selectedPair?.pair_key);
@@ -121,6 +133,26 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
               draft.open = result.open;
               draft.close = result.close;
             });
+
+            dispatch(marketsOrdersApi.util.updateQueryData('getOrders', allOpenOrdersArgs, (draft) => {
+              const result = handleSocketOrder(action, data, draft, OrderExecutionType.open, null);
+              
+              if (!result) {
+                return;
+              }
+
+              draft.open = result.open;
+            }));
+
+            dispatch(marketsOrdersApi.util.updateQueryData('getOrders', allClosedOrdersArgs, (draft) => {
+              const result = handleSocketOrder(action, data, draft, OrderExecutionType.close, null);
+              
+              if (!result) {
+                return;
+              }
+
+              draft.close = result.close;
+            }));
 
             const orderId = data[3];
             scheduleOrderBackgroundUpdate(action, orderId, updateCachedData);

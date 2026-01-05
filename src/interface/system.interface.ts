@@ -5,6 +5,11 @@ export interface ISystemVersionState {
   new_version: boolean;
 }
 
+export interface IMaintenanceSocketData {
+  mode?: MaintenanceMode;
+  scheduledDate?: Date;
+}
+
 export interface ISystemMaintenanceState {
   maintenance_mode: MaintenanceMode,
   scheduledDate?: Date
