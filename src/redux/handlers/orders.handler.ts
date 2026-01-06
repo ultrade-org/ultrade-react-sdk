@@ -2,7 +2,7 @@ import { AddOrderEvent, IPair, ITradeDto, Order, OrderExecutionType, OrderUpdate
 
 import { IUserOrders } from "@interface";
 import { updateOrderState, cancelOrder, IOrderSocketActionMap, saveNewOpenOrder, equalsIgnoreCase } from "../helpers";
-import { openOrdersAdapter, closeOrdersAdapter, getAllOpenOrders, getAllCloseOrders, getOpenOrderById, getCloseOrderById, openInitialState, closeInitialState } from "@redux";
+import { openOrdersAdapter, closeOrdersAdapter, getOpenOrderById, getCloseOrderById } from "@redux";
 
 export const handleSocketOrder = <T extends keyof IOrderSocketActionMap>(
   action: T,
@@ -36,12 +36,9 @@ export const newTradeForOrderHandler = (data: UserTradeEvent, prevOrdersState: I
     fee,
     status,
   };
-
-  const openState = openOrdersAdapter.setAll(openInitialState, prevOrdersState.open);
-  const closeState = closeOrdersAdapter.setAll(closeInitialState, prevOrdersState.close);
   
-  const openOrder = getOpenOrderById(openState, orderId);
-  const closeOrder = getCloseOrderById(closeState, orderId);
+  const openOrder = getOpenOrderById(prevOrdersState.open, orderId);
+  const closeOrder = getCloseOrderById(prevOrdersState.close, orderId);
 
   const originalOrder = openOrder || closeOrder;
   if (!originalOrder) {
@@ -50,60 +47,64 @@ export const newTradeForOrderHandler = (data: UserTradeEvent, prevOrdersState: I
 
   const orderType = openOrder ? OrderExecutionType.open : OrderExecutionType.close;
 
-  const orderAddTo: Order = {
-    ...originalOrder,
-    trades: originalOrder.trades ? [...originalOrder.trades] : []
-  };
+  const existingTrades = originalOrder.trades || [];
+  const foundTradeIndex = existingTrades.findIndex(item => item.tradeId === trade.tradeId);
   
-  const foundTrade = orderAddTo.trades.find(item => item.tradeId === trade.tradeId);
-  if (foundTrade) {
-    foundTrade.fee = trade.fee;
-    foundTrade.status = trade.status;
+  let updatedTrades: ITradeDto[];
+  if (foundTradeIndex !== -1) {
+    updatedTrades = existingTrades.map((item, idx) => 
+      idx === foundTradeIndex 
+        ? { ...item, fee: trade.fee, status: trade.status }
+        : item
+    );
   } else {
-    const tradeIndex = orderAddTo.trades.findIndex(item => new Date(item.createdAt) <= new Date(trade.createdAt));
-    if (tradeIndex !== -1) {
-      orderAddTo.trades.splice(tradeIndex, 0, trade);
+    const insertIndex = existingTrades.findIndex(item => new Date(item.createdAt) <= new Date(trade.createdAt));
+    if (insertIndex !== -1) {
+      updatedTrades = [
+        ...existingTrades.slice(0, insertIndex),
+        trade,
+        ...existingTrades.slice(insertIndex)
+      ];
     } else {
-      orderAddTo.trades.push(trade);
+      updatedTrades = [...existingTrades, trade];
     }
   }
+  
+  const orderAddTo: Order = {
+    ...originalOrder,
+    trades: updatedTrades
+  };
 
-  let updatedOpenState = openState;
-  let updatedCloseState = closeState;
+  let updatedOpenState = prevOrdersState.open;
+  let updatedCloseState = prevOrdersState.close;
 
   if (orderAddTo.updateStatus === OrderUpdateStaus.removed) {
     if (openOrder) {
-      updatedOpenState = openOrdersAdapter.removeOne(openState, orderId);
+      updatedOpenState = openOrdersAdapter.removeOne(prevOrdersState.open, orderId);
     }
     
-    const existingCloseOrder = getCloseOrderById(closeState, orderId);
+    const existingCloseOrder = getCloseOrderById(prevOrdersState.close, orderId);
     if (!existingCloseOrder) {
-      updatedCloseState = closeOrdersAdapter.addOne(closeState, orderAddTo);
+      updatedCloseState = closeOrdersAdapter.addOne(prevOrdersState.close, orderAddTo);
     } else {
-      updatedCloseState = closeOrdersAdapter.updateOne(closeState, { id: orderId, changes: orderAddTo });
+      updatedCloseState = closeOrdersAdapter.updateOne(prevOrdersState.close, { id: orderId, changes: orderAddTo });
     }
-    
-    const updatedOpen = getAllOpenOrders(updatedOpenState);
-    const updatedClose = getAllCloseOrders(updatedCloseState);
     
     return {
-      open: updatedOpen,
-      close: updatedClose
+      open: updatedOpenState,
+      close: updatedCloseState
     };
   } else { 
     if (equalsIgnoreCase(orderType, OrderExecutionType.open)) {
-      updatedOpenState = openOrdersAdapter.updateOne(openState, { id: orderId, changes: orderAddTo });
+      updatedOpenState = openOrdersAdapter.updateOne(prevOrdersState.open, { id: orderId, changes: orderAddTo });
     } else {
-      updatedCloseState = closeOrdersAdapter.updateOne(closeState, { id: orderId, changes: orderAddTo });
+      updatedCloseState = closeOrdersAdapter.updateOne(prevOrdersState.close, { id: orderId, changes: orderAddTo });
     }
-    
-    const updatedOpen = getAllOpenOrders(updatedOpenState);
-    const updatedClose = getAllCloseOrders(updatedCloseState);
     
     return {
       ...prevOrdersState,
-      open: updatedOpen,
-      close: updatedClose
+      open: updatedOpenState,
+      close: updatedCloseState
     };
   }
 };

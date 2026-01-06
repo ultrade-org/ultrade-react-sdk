@@ -15,13 +15,13 @@ import {
   UserTradeEvent,
 } from "@ultrade/ultrade-js-sdk";
 
-import { IQueryFuncResult, dataGuard } from "@utils";
+import { IQueryFuncResult, createValidatedTag, dataGuard } from "@utils";
 import { withErrorHandling } from '@helpers';
 import baseApi from "../base.api";
 import RtkSdkAdaptor from "../sdk";
-import { IUserOrders } from "@interface";
-import { IOrderSocketActionMap, handleSocketOrder, newTradeForOrderHandler, saveUserOrders, scheduleOrderBackgroundUpdate } from "@redux";
-import { initialUserOrdersState } from "@consts";
+import { IUserOrders, IUserOrdersArray } from "@interface";
+import { IOrderSocketActionMap, handleSocketOrder, newTradeForOrderHandler, saveUserOrders, scheduleOrderBackgroundUpdate, openOrdersSelectors, closeOrdersSelectors, getAllOpenOrders, getAllCloseOrders } from "@redux";
+import { initialUserOrdersArrayState, initialUserOrdersState } from "@consts";
 
 const openOrderStatus = OrderExecution[OrderExecutionType.open]
 const closeOrderStatus = OrderExecution[OrderExecutionType.close];
@@ -78,11 +78,13 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
 
         return { data: preparedResult };
       },
-      providesTags: ['markets_orders'],
+      providesTags: (result, error, { symbol, status }) => [
+        { type: 'markets_orders', id: createValidatedTag([symbol, status]) }
+      ],
       async onCacheEntryAdded({ symbol }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState, dispatch }) {
         let handlerId: number | null = null;
-        const state = getState() as any;
-        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ORDERS, STREAMS.TRADES], symbol ? symbol : state.user.selectedPair?.pair_key);
+        const initialState = getState() as any;
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ORDERS, STREAMS.TRADES], symbol ? symbol : initialState.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
@@ -96,8 +98,9 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
               return;
             }
             
-            const selectedPair = state.user.selectedPair as IPair;
-            const orderHistoryTab = state.exchange.openHistoryTab as OrderExecutionType;
+            const currentState = getState() as any;
+            const selectedPair = currentState.user.selectedPair as IPair;
+            const orderHistoryTab = currentState.exchange.openHistoryTab as OrderExecutionType;
             
             if(orderSocketEventGuard(event, args[0])){
 
@@ -134,26 +137,28 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
               draft.close = result.close;
             });
 
-            dispatch(marketsOrdersApi.util.updateQueryData('getOrders', allOpenOrdersArgs, (draft) => {
-              const result = handleSocketOrder(action, data, draft, OrderExecutionType.open, null);
-              
-              if (!result) {
-                return;
-              }
+            const allOpenCache = marketsOrdersApi.endpoints.getOrders.select(allOpenOrdersArgs)(currentState);
+            const allClosedCache = marketsOrdersApi.endpoints.getOrders.select(allClosedOrdersArgs)(currentState);
 
-              draft.open = result.open;
-            }));
+            if (allOpenCache.data) {
+              dispatch(marketsOrdersApi.util.updateQueryData('getOrders', allOpenOrdersArgs, (draft) => {
+                const result = handleSocketOrder(action, data, draft, OrderExecutionType.open, null);
 
-            dispatch(marketsOrdersApi.util.updateQueryData('getOrders', allClosedOrdersArgs, (draft) => {
-              const result = handleSocketOrder(action, data, draft, OrderExecutionType.close, null);
-              
-              if (!result) {
-                return;
-              }
+                draft.close = result.close;
+                draft.open = result.open;
+              }));
+            }
 
-              draft.close = result.close;
-            }));
+            if (allClosedCache.data) {
+              dispatch(marketsOrdersApi.util.updateQueryData('getOrders', allClosedOrdersArgs, (draft) => {
+                const result = handleSocketOrder(action, data, draft, OrderExecutionType.close, null);
 
+                draft.open = result.open;
+                draft.close = result.close;
+              }));
+            }
+
+      
             const orderId = data[3];
             scheduleOrderBackgroundUpdate(action, orderId, updateCachedData);
           });
@@ -186,13 +191,18 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
       queryFn: async (data: ICancelMultipleOrdersArgs): IQueryFuncResult<ICancelMultipleOrdersResponse> => {
         return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.cancelMultipleOrders(data));
       },
-      invalidatesTags: (result, error, { orderIds }) => orderIds?.map(orderId => ({ type: 'markets_orders', id: orderId })) || [],
+      invalidatesTags: (result, error, { orderIds, pairId }) => {
+        if(pairId) {
+          return [{ type: 'markets_orders', id: createValidatedTag([pairId, openOrderStatus]) }];
+        }
+        return orderIds.map(orderId => ({ type: 'markets_orders', id: orderId }));
+      },
     }),
   }),
 });
 
-export const {
-  useGetOrdersQuery,
+const {
+  useGetOrdersQuery: useGetOrdersQueryBase,
   useGetOrderByIdQuery,
   useLazyGetOrdersQuery,
   useLazyGetOrderByIdQuery,
@@ -200,3 +210,25 @@ export const {
   useCancelOrderMutation,
   useCancelMultipleOrdersMutation
 } = marketsOrdersApi;
+
+export {
+  useGetOrderByIdQuery,
+  useLazyGetOrdersQuery,
+  useLazyGetOrderByIdQuery,
+  useCreateSpotOrderMutation,
+  useCancelOrderMutation,
+  useCancelMultipleOrdersMutation
+};
+
+export const useGetOrdersQuery = (args: IGetOrdersArgs, options?: Record<string, unknown>) => {
+  return useGetOrdersQueryBase(args, {
+    ...options,
+    selectFromResult: (result) => ({
+      ...result,
+      data: result.data ? {
+        open: getAllOpenOrders(result.data.open),
+        close: getAllCloseOrders(result.data.close)
+      } as IUserOrdersArray : initialUserOrdersArrayState
+    })
+  });
+};

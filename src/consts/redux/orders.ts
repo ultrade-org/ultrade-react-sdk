@@ -1,7 +1,12 @@
-import { IUserOrders } from "@interface";
-import { openOrdersAdapter, closeOrdersAdapter, getAllOpenOrders, getAllCloseOrders } from "@redux";
+import { IUserOrders, IUserOrdersArray } from "@interface";
+import { openOrdersAdapter, closeOrdersAdapter } from "@redux";
 
 export const initialUserOrdersState: IUserOrders = {
-  open: getAllOpenOrders(openOrdersAdapter.getInitialState()),
-  close: getAllCloseOrders(closeOrdersAdapter.getInitialState()),
+  open: openOrdersAdapter.getInitialState(),
+  close: closeOrdersAdapter.getInitialState(),
+}
+
+export const initialUserOrdersArrayState: IUserOrdersArray = {
+  open: [],
+  close: []
 }

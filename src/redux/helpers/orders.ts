@@ -1,9 +1,10 @@
 import BigNumber from 'bignumber.js';
+import { EntityState } from '@reduxjs/toolkit';
 
 import { amountValueFormate, equalsIgnoreCase, sortByDate } from './formaters';
 import { AddOrderEvent, IOrderDto, IPair, ITradeDto, Order, OrderExecutionType, OrderStatus, OrderTypeEnum, OrderUpdateStaus, UpdateOrderEvent } from '@ultrade/ultrade-js-sdk';
 import { IUserOrders } from '@interface';
-import { openOrdersAdapter, closeOrdersAdapter, getAllOpenOrders, getAllCloseOrders, getOpenOrderById, getCloseOrderById, openInitialState, closeInitialState } from '@redux';
+import { openOrdersAdapter, closeOrdersAdapter, getOpenOrderById, getCloseOrderById, openOrdersSelectors, closeOrdersSelectors } from '@redux';
 export interface IOrderSocketActionMap {
   add: AddOrderEvent;
   update: UpdateOrderEvent;
@@ -75,21 +76,16 @@ export const saveNewOpenOrder = (data: AddOrderEvent, prevOrdersState: IUserOrde
     trades: [],
   };
 
-  const currentState = openOrdersAdapter.setAll(openInitialState, prevOrdersState.open);
-  const updatedState = openOrdersAdapter.addOne(currentState, newOrder);
-  const updatedOrdersArray = getAllOpenOrders(updatedState);
+  const updatedState = openOrdersAdapter.addOne(prevOrdersState.open, newOrder);
 
-  return { ...prevOrdersState, open: updatedOrdersArray };
+  return { ...prevOrdersState, open: updatedState };
 };
 
 export const updateOrderState = (data: UpdateOrderEvent, { open, close }: IUserOrders, openHistoryTab: OrderExecutionType ): IUserOrders | null => {
   const [ _pairId, _pairKey, _userId, id, status, executedPrice, filledAmount, filledTotal, _updatedAt, completedAt ] = data;
   
-  const openState = openOrdersAdapter.setAll(openInitialState, open);
-  const closeState = closeOrdersAdapter.setAll(closeInitialState, close);
-  
-  const openOrder = getOpenOrderById(openState, id);
-  const closeOrder = getCloseOrderById(closeState, id);
+  const openOrder = getOpenOrderById(open, id);
+  const closeOrder = getCloseOrderById(close, id);
 
   if (!openOrder && !closeOrder) {
     return null;
@@ -103,13 +99,13 @@ export const updateOrderState = (data: UpdateOrderEvent, { open, close }: IUserO
     completedAt
   };
 
-  let updatedOpenState = openState;
-  let updatedCloseState = closeState;
+  let updatedOpenState = open;
+  let updatedCloseState = close;
 
   if (openOrder && status === OrderStatus.Open) {
     const isRapidOrder = openOrder.type === OrderTypeEnum.IOC || openOrder.type === OrderTypeEnum.Market;
     
-    updatedOpenState = openOrdersAdapter.updateOne(openState, {
+    updatedOpenState = openOrdersAdapter.updateOne(open, {
       id,
       changes: {
         ...updatedOrderChanges,
@@ -119,7 +115,7 @@ export const updateOrderState = (data: UpdateOrderEvent, { open, close }: IUserO
   } else if (openOrder && status !== OrderStatus.Open) {
     
     if (equalsIgnoreCase(openHistoryTab, OrderExecutionType.open)) {
-      updatedOpenState = openOrdersAdapter.updateOne(openState, {
+      updatedOpenState = openOrdersAdapter.updateOne(open, {
         id,
         changes: {
           ...updatedOrderChanges,
@@ -129,23 +125,20 @@ export const updateOrderState = (data: UpdateOrderEvent, { open, close }: IUserO
       });
     } else {
       const orderToMove = { ...openOrder, ...updatedOrderChanges };
-      updatedOpenState = openOrdersAdapter.removeOne(openState, id);
-      updatedCloseState = closeOrdersAdapter.addOne(closeState, orderToMove);
+      updatedOpenState = openOrdersAdapter.removeOne(open, id);
+      updatedCloseState = closeOrdersAdapter.addOne(close, orderToMove);
     }
 
   } else if (closeOrder) {
-    updatedCloseState = closeOrdersAdapter.updateOne(closeState, {
+    updatedCloseState = closeOrdersAdapter.updateOne(close, {
       id,
       changes: updatedOrderChanges
     });
   }
 
-  const updatedOpen = getAllOpenOrders(updatedOpenState);
-  const updatedClose = getAllCloseOrders(updatedCloseState);
-
   return {
-    open: updatedOpen,
-    close: updatedClose,
+    open: updatedOpenState,
+    close: updatedCloseState,
   };
 }
   
@@ -176,32 +169,28 @@ const saveOpenOrders = (orders: IOrderDto[], prevOrdersState: IUserOrders, listO
   const newOrders = joinPairToOrder(orders, listOfPairs);
   
   const filteredOrders = getActualElement(
-    prevOrdersState.open, 
+    openOrdersSelectors.selectAll(prevOrdersState.open), 
     newOrders, 
     (a: Order, b: Order) => a.pairId === b.pairId && a.id === b.id
   );
   
-  const currentState = openOrdersAdapter.setAll(openInitialState, prevOrdersState.open);
-  const updatedState = openOrdersAdapter.upsertMany(currentState, filteredOrders);
-  const updatedOrdersArray = getAllOpenOrders(updatedState);
+  const updatedState = openOrdersAdapter.upsertMany(prevOrdersState.open, filteredOrders);
   
-  return { ...prevOrdersState, open: updatedOrdersArray };
+  return { ...prevOrdersState, open: updatedState };
 };
 
 const saveCloseOrders = (orders: IOrderDto[], prevOrdersState: IUserOrders, listOfPairs: IPair[]): IUserOrders => {
   const newOrders = joinPairToOrder(orders, listOfPairs);
   
   const filteredOrders = getActualElement(
-    prevOrdersState.close, 
+    closeOrdersSelectors.selectAll(prevOrdersState.close), 
     newOrders, 
     (a: Order, b: Order) => a.pairId === b.pairId && a.id === b.id
   );
   
-  const currentState = closeOrdersAdapter.setAll(closeInitialState, prevOrdersState.close);
-  const updatedState = closeOrdersAdapter.upsertMany(currentState, filteredOrders);
-  const updatedOrdersArray = getAllCloseOrders(updatedState);
+  const updatedState = closeOrdersAdapter.upsertMany(prevOrdersState.close, filteredOrders);
   
-  return { ...prevOrdersState, close: updatedOrdersArray };
+  return { ...prevOrdersState, close: updatedState };
 };
 
 export const saveUserOrders = (orders: IOrderDto[], prevOrdersState: IUserOrders, ordersType: OrderExecutionType, listOfPairs: IPair[]): IUserOrders => {
@@ -213,51 +202,41 @@ export const saveUserOrders = (orders: IOrderDto[], prevOrdersState: IUserOrders
 };
 
 export const removeOpenOrderBg = (order: Order, prevOrdersState: IUserOrders): IUserOrders | null => {
-  const openState = openOrdersAdapter.setAll(openInitialState, prevOrdersState.open);
-  
-  const openOrder = getOpenOrderById(openState, order.id);
+  const openOrder = getOpenOrderById(prevOrdersState.open, order.id);
   if (!openOrder) {
     return null;
   }
   
-  const updatedOpenState = openOrdersAdapter.updateOne(openState, {
+  const updatedOpenState = openOrdersAdapter.updateOne(prevOrdersState.open, {
     id: order.id,
     changes: { updateStatus: null }
   });
   
-  const updatedOpen = getAllOpenOrders(updatedOpenState);
-  
   return {
     ...prevOrdersState,
-    open: updatedOpen
+    open: updatedOpenState
   };
 };
 
 export const moveOrderToHistory = (order: Order, prevOrdersState: IUserOrders): IUserOrders | null => {
-  const openState = openOrdersAdapter.setAll(openInitialState, prevOrdersState.open);
-  const closeState = closeOrdersAdapter.setAll(closeInitialState, prevOrdersState.close);
-  
-  const openOrder = getOpenOrderById(openState, order.id);
+  const openOrder = getOpenOrderById(prevOrdersState.open, order.id);
   if (!openOrder) {
     return null;
   }
   
-  const existingCloseOrder = getCloseOrderById(closeState, order.id);
+  const existingCloseOrder = getCloseOrderById(prevOrdersState.close, order.id);
   const orderToMove = { ...order, updateStatus: null };
   
-  const updatedOpenState = openOrdersAdapter.removeOne(openState, order.id);
-  let updatedCloseState = closeState;
+  const updatedOpenState = openOrdersAdapter.removeOne(prevOrdersState.open, order.id);
+  let updatedCloseState = prevOrdersState.close;
   
   if (!existingCloseOrder) {
-    updatedCloseState = closeOrdersAdapter.addOne(closeState, orderToMove);
+    updatedCloseState = closeOrdersAdapter.addOne(prevOrdersState.close, orderToMove);
   }
   
-  const updatedOpen = getAllOpenOrders(updatedOpenState);
-  const updatedClose = getAllCloseOrders(updatedCloseState);
-  
   return {
-    open: updatedOpen,
-    close: updatedClose
+    open: updatedOpenState,
+    close: updatedCloseState
   };
 };
 
@@ -270,8 +249,7 @@ export const scheduleOrderBackgroundUpdate = (
 ): void => {
   setTimeout(() => {
     updateCachedData((draft) => {
-      const openState = openOrdersAdapter.setAll(openInitialState, draft.open);
-      const order = getOpenOrderById(openState, orderId);
+      const order = getOpenOrderById(draft.open, orderId);
       
       if (!order) {
         return;
@@ -311,11 +289,8 @@ const getActualTrades = (oldTrades: ITradeDto[], newTrades: ITradeDto[]): ITrade
 export const addTradesToOrder = (orderWithTrades: Order, prevOrdersState: IUserOrders): IUserOrders | null => {
   const { id, trades } = orderWithTrades;
   
-  const openState = openOrdersAdapter.setAll(openInitialState, prevOrdersState.open);
-  const closeState = closeOrdersAdapter.setAll(closeInitialState, prevOrdersState.close);
-  
-  const openOrder = getOpenOrderById(openState, id);
-  const closeOrder = getCloseOrderById(closeState, id);
+  const openOrder = getOpenOrderById(prevOrdersState.open, id);
+  const closeOrder = getCloseOrderById(prevOrdersState.close, id);
   
   if (!openOrder && !closeOrder) {
     return null;
@@ -337,26 +312,23 @@ export const addTradesToOrder = (orderWithTrades: Order, prevOrdersState: IUserO
     trades: sortedTrades,
   };
   
-  let updatedOpenState = openState;
-  let updatedCloseState = closeState;
+  let updatedOpenState = prevOrdersState.open;
+  let updatedCloseState = prevOrdersState.close;
   
   if (equalsIgnoreCase(orderType, OrderExecutionType.open)) {
-    updatedOpenState = openOrdersAdapter.updateOne(openState, {
+    updatedOpenState = openOrdersAdapter.updateOne(prevOrdersState.open, {
       id,
       changes: updatedOrder,
     });
   } else {
-    updatedCloseState = closeOrdersAdapter.updateOne(closeState, {
+    updatedCloseState = closeOrdersAdapter.updateOne(prevOrdersState.close, {
       id,
       changes: updatedOrder,
     });
   }
   
-  const updatedOpen = getAllOpenOrders(updatedOpenState);
-  const updatedClose = getAllCloseOrders(updatedCloseState);
-  
   return {
-    open: updatedOpen,
-    close: updatedClose,
+    open: updatedOpenState,
+    close: updatedCloseState,
   };
 };
