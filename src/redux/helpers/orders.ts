@@ -255,21 +255,20 @@ export const scheduleOrderBackgroundUpdate = (
         return;
       }
 
-      if (action === "add" || action === "update") {
-        if (order.updateStatus === OrderUpdateStaus.created || order.updateStatus === OrderUpdateStaus.partially_filled) {
-          const removeResult = removeOpenOrderBg(order, draft);
-          if (removeResult) {
-            draft.open = removeResult.open;
-            draft.close = removeResult.close;
-          }
+      if (order.updateStatus === OrderUpdateStaus.created || order.updateStatus === OrderUpdateStaus.partially_filled) {
+        const removeResult = removeOpenOrderBg(order, draft);
+        if (removeResult) {
+          draft.open = removeResult.open;
+          draft.close = removeResult.close;
         }
-      } else if (action === "cancel") {
-        if (order.updateStatus === OrderUpdateStaus.removed) {
-          const moveResult = moveOrderToHistory(order, draft);
-          if (moveResult) {
-            draft.open = moveResult.open;
-            draft.close = moveResult.close;
-          }
+        return;
+      }
+
+      if (order.updateStatus === OrderUpdateStaus.removed) {
+        const moveResult = moveOrderToHistory(order, draft);
+        if (moveResult) {
+          draft.open = moveResult.open;
+          draft.close = moveResult.close;
         }
       }
     });

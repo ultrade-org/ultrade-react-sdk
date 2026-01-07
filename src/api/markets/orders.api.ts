@@ -100,6 +100,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
             
             const currentState = getState() as any;
             const selectedPair = currentState.user.selectedPair as IPair;
+            const listOfPairs = currentState.exchange.listOfPairs as IPair[];
             const orderHistoryTab = currentState.exchange.openHistoryTab as OrderExecutionType;
             
             if(orderSocketEventGuard(event, args[0])){
@@ -107,6 +108,9 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
               const data = args[0];
 
               updateCachedData((draft) => {
+                if (!draft) {
+                  return;
+                }
 
                 const result = newTradeForOrderHandler(data, draft);
                 
@@ -125,9 +129,19 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
             }
             
             const [[action, data]] = args
+            const eventPairId = data[0];
+            const eventPair = listOfPairs.find(p => p.id === eventPairId);
 
             updateCachedData((draft) => {
-              const result = handleSocketOrder(action, data, draft, orderHistoryTab, selectedPair);
+              if (!draft) {
+                return;
+              }
+
+              if (symbol && eventPair && eventPair.pair_key !== symbol) {
+                return;
+              }
+
+              const result = handleSocketOrder(action, data, draft, orderHistoryTab, eventPair || selectedPair);
 
               if (!result) {
                 return;
@@ -142,23 +156,34 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
 
             if (allOpenCache.data) {
               dispatch(marketsOrdersApi.util.updateQueryData('getOrders', allOpenOrdersArgs, (draft) => {
-                const result = handleSocketOrder(action, data, draft, OrderExecutionType.open, null);
+                if (!draft) {
+                  return;
+                }
 
-                draft.close = result.close;
-                draft.open = result.open;
+                const result = handleSocketOrder(action, data, draft, OrderExecutionType.open, selectedPair);
+
+                if (result) {
+                  draft.close = result.close;
+                  draft.open = result.open;
+                }
               }));
             }
 
             if (allClosedCache.data) {
               dispatch(marketsOrdersApi.util.updateQueryData('getOrders', allClosedOrdersArgs, (draft) => {
-                const result = handleSocketOrder(action, data, draft, OrderExecutionType.close, null);
+                if (!draft) {
+                  return;
+                }
 
-                draft.open = result.open;
-                draft.close = result.close;
+                const result = handleSocketOrder(action, data, draft, OrderExecutionType.close, selectedPair);
+
+                if (result) {
+                  draft.open = result.open;
+                  draft.close = result.close;
+                }
               }));
             }
 
-      
             const orderId = data[3];
             scheduleOrderBackgroundUpdate(action, orderId, updateCachedData);
           });
