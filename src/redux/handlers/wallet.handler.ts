@@ -18,14 +18,24 @@ export const saveUserWalletTransfer = (data: ITransfer[]): IWalletTransferState 
 
 export const updateUserWalletTransactions = (newData: ITransaction, walletState: IWalletTransactionsState): IWalletTransactionsState => {
   const txnType = newData.action_type;
-  const walletTransactions = walletState[txnType];
+  const walletTransactions = walletState?.[txnType];
+
+  if (!walletTransactions || !Array.isArray(walletTransactions)) {
+    return {
+      ...walletState,
+      [txnType]: [newData]
+    };
+  }
+
   const existingTransactionIndex = walletTransactions.findIndex(transaction => transaction.primaryId === newData.primaryId);
   // dispatch(updatePendingTxnsCount(newData, walletTransactions[existingTransactionIndex]));
 
   let updatedWalletTransactions;
   if (existingTransactionIndex !== -1) {
-    const exsistItem = walletTransactions.find((oldItem: ITransaction) => oldItem.primaryId === newData.primaryId);
-    if (equalsIgnoreCase(exsistItem.status, OperationStatusEnum.Completed)) return;
+    const exsistItem = walletTransactions[existingTransactionIndex];
+    if (equalsIgnoreCase(exsistItem.status, OperationStatusEnum.Completed)) {
+      return walletState;
+    }
 
     updatedWalletTransactions = [...walletTransactions];
     updatedWalletTransactions[existingTransactionIndex] = newData;
@@ -39,14 +49,24 @@ export const updateUserWalletTransactions = (newData: ITransaction, walletState:
 }
 
 export const updateTransferTransactions = (newData: ITransfer, walletState: IWalletTransferState): IWalletTransferState => {
-  const walletTransfers = walletState.transfer;
+  const walletTransfers = walletState?.transfer;
+
+  if (!walletTransfers || !Array.isArray(walletTransfers)) {
+    return {
+      ...walletState,
+      transfer: [newData]
+    };
+  }
+
   const existingIndex = walletTransfers.findIndex(transaction => transaction.transferId === newData.transferId);
   // dispatch(updatePendingTxnsCount(newData, walletTransfers[existingIndex]));
 
   let updatedWalletTransfers;
   if (existingIndex !== -1) {
     const isTxnUpdated = new Date(walletTransfers[existingIndex].completedAt).getTime() >= new Date(newData.completedAt).getTime();
-    if (isTxnUpdated) return;
+    if (isTxnUpdated) {
+      return walletState;
+    }
 
     updatedWalletTransfers = [...walletTransfers];
     updatedWalletTransfers[existingIndex] = {...updatedWalletTransfers[existingIndex], ...newData};
@@ -55,6 +75,7 @@ export const updateTransferTransactions = (newData: ITransfer, walletState: IWal
   }
 
   return {
+    ...walletState,
     [ACTION_TYPE.T]: updatedWalletTransfers.sort((a, b) => b.transferId - a.transferId)
   }
 }

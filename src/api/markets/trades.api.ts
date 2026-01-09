@@ -11,6 +11,7 @@ import { initialTradesState } from "@consts";
 export const marketsTradesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getLastTrades: builder.query<IGetLastTradesTransformedResult, IGetLastTradesArgs>({
+      keepUnusedDataFor: 30,
       queryFn: async ({ symbol }: IGetLastTradesArgs, { getState, dispatch }): IQueryFuncResult<IGetLastTradesTransformedResult> => {
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getLastTrades(symbol));
 

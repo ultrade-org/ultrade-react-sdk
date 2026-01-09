@@ -11,6 +11,7 @@ import { depthHandler } from '@redux';
 export const marketsDepthApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getDepth: builder.query<IGetDepthTransformedResult, IGetDepthArgs>({
+      keepUnusedDataFor: 30,
       queryFn: async ({ symbol, depth, baseDecimal }): IQueryFuncResult<IGetDepthTransformedResult> => {
         if (!hasAllArgs([symbol, depth, baseDecimal])) {
           return { data: initialDepthState };

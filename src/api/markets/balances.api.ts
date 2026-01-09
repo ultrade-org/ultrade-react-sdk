@@ -15,6 +15,7 @@ interface ISocketData {
 export const marketsBalancesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getBalances: builder.query<IDepositBalanceTransformedResult, IPair["pair_key"]>({
+      keepUnusedDataFor: 30,
       queryFn: async (pairKey, { getState, dispatch }): IQueryFuncResult<IDepositBalanceTransformedResult> => {
 
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getBalances());

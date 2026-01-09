@@ -71,11 +71,12 @@ export const walletApi = baseApi.injectEndpoints({
             const [data] = args;
 
             updateCachedData((draft) => {
-              if (!draft) {
+              if (!draft || !draft.deposit || !draft.withdraw) {
                 return initialWalletTransactionsState;
               }
 
-              return updateUserWalletTransactions(data, draft);
+              const result = updateUserWalletTransactions(data, draft);
+              return result;
             });
           });
         } catch (error) {
@@ -131,10 +132,11 @@ export const walletApi = baseApi.injectEndpoints({
             const [data] = args;
 
             updateCachedData((draft) => {
-              if (!draft) {
+              if (!draft || !draft.transfer) {
                 return initialWalletTransferState;
               }
-              return updateTransferTransactions(data, draft);
+              const result = updateTransferTransactions(data, draft);
+              return result;
             });
           });
         } catch (error) {

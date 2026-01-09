@@ -16,7 +16,7 @@ import { initialPairListState } from '@consts';
 export const marketsPairsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getPairList: builder.query<IGetPairListTransformedResult, IGetPairListArgs>({
-
+      keepUnusedDataFor: 180,
       queryFn: async ({ selectedPairId }, { getState }): IQueryFuncResult<IGetPairListTransformedResult> => {
         const state = getState() as any;
         const cachedSettings = marketsCommonApi.endpoints.getSettings.select()(state).data;

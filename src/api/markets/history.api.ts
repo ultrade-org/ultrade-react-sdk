@@ -8,6 +8,7 @@ import { withErrorHandling } from '@helpers';
 export const marketsHistoryApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getHistory: builder.query<IGetHistoryResponse, IGetHistoryArgs>({
+      keepUnusedDataFor: 20,
       queryFn: async ({ symbol, interval, startTime, endTime, limit, page }: IGetHistoryArgs): IQueryFuncResult<IGetHistoryResponse> => {
         return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getHistory(symbol, interval, startTime, endTime, limit, page));
       },

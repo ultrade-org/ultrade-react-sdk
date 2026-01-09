@@ -10,6 +10,7 @@ import { initialSettingsState } from '@consts';
 export const marketsCommonApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getSettings: builder.query<ISettingsState, void>({
+      keepUnusedDataFor: Number.POSITIVE_INFINITY,
       queryFn: async (): IQueryFuncResult<ISettingsState> => {
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getSettings());
 
