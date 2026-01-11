@@ -55,7 +55,7 @@ export const walletApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ITransaction, string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [{data: ITransaction}, string]) => {
             if(event !== "allStat" && event !== "depth"){
               console.log("event transactions", event, args);
             }
@@ -68,7 +68,7 @@ export const walletApi = baseApi.injectEndpoints({
               return;
             }
 
-            const [data] = args;
+            const [{data}] = args;
 
             updateCachedData((draft) => {
               if (!draft || !draft.deposit || !draft.withdraw) {
@@ -115,7 +115,7 @@ export const walletApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [ITransfer, string]) => {
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [{ data: ITransfer}, string]) => {
 
             if(event !== "allStat" && event !== "depth"){
               console.log("event transfer", event, args);
@@ -129,7 +129,7 @@ export const walletApi = baseApi.injectEndpoints({
               return;
             }
    
-            const [data] = args;
+            const [{data}] = args;
 
             updateCachedData((draft) => {
               if (!draft || !draft.transfer) {
