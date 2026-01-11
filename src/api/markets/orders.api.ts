@@ -36,6 +36,7 @@ export interface IGetOrdersQueryArgs extends IGetOrdersArgs {}
 export const marketsOrdersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getOrders: builder.query<IUserOrders, IGetOrdersQueryArgs>({
+      keepUnusedDataFor: 40,
       queryFn: async (args, { getState, dispatch }): IQueryFuncResult<IUserOrders> => {
         const { symbol, status, startTime, endTime, limit, orderHistoryTab } = args;
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getOrders(symbol, status, limit, endTime, startTime));
@@ -148,8 +149,14 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
           console.error('Error loading cache data:', error);
         }
 
-        await cacheEntryRemoved;
-        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
+        await Promise.all([cacheEntryRemoved, RtkSdkAdaptor.originalSdk.unsubscribeAsync(handlerId)]);
+
+        const state = getState() as any;
+        const selectedPair = state.user.selectedPair as IPair;
+
+        if(symbol === selectedPair?.pair_key) {
+          dispatch(marketsOrdersApi.endpoints.getOrders.initiate(args));
+        }
       },
     }),
     createSpotOrder: builder.mutation<IOrderDto, CreateSpotOrderArgs>({
@@ -203,7 +210,7 @@ export const useGetOrdersQuery = (args: IGetOrdersQueryArgs, options?: Record<st
       data: result.data ? {
         open: getAllOpenOrders(result.data.open),
         close: getAllCloseOrders(result.data.close)
-      } as IUserOrdersArray : initialUserOrdersArrayState
+      } : initialUserOrdersArrayState
     })
   });
 };

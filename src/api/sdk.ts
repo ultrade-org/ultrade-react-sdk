@@ -1,4 +1,11 @@
+import { Dispatch } from '@reduxjs/toolkit';
 import { Client, AuthCredentials, ClientOptions } from '@ultrade/ultrade-js-sdk';
+
+import { systemTags } from '@consts';
+import { marketsBalancesApi, marketsOrdersApi } from './markets';
+import { walletApi } from './wallet.api';
+import { withdrawalWalletsApi } from './withdrawalWallets.api';
+
 export default class RtkSdkAdaptor extends Client {
 
   public static originalSdk: Client | null = null;
@@ -30,5 +37,21 @@ export default class RtkSdkAdaptor extends Client {
       );
     }
     return RtkSdkAdaptor.instance;
+  }
+  static resetSdkState(dispatch: Dispatch): void {
+    const apiForResetState = [
+      marketsOrdersApi,
+      marketsBalancesApi,
+      walletApi,
+      withdrawalWalletsApi
+    ]
+
+    apiForResetState.forEach(api => {
+      dispatch(api.util.invalidateTags([...systemTags]));
+    });
+    
+    apiForResetState.forEach(api => {
+      dispatch(api.util.resetApiState());
+    });
   }
 }

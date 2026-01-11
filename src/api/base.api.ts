@@ -10,6 +10,7 @@ export const baseApi = createApi({
     };
   },
   tagTypes: composedTags,
+  refetchOnReconnect: true,
   endpoints: () => ({}),
 });
 

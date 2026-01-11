@@ -1,4 +1,4 @@
-const marketsTags = [
+export const marketsTags = [
   'markets_balances',
   'markets_last_trades',
   'markets_symbols',
@@ -10,7 +10,7 @@ const marketsTags = [
   'markets_codex_assets',
 ] as const
 
-const walletTags = [
+export const walletTags = [
   'wallet_transactions',
   'wallet_trading_keys',
   'wallet_transfers',
@@ -18,11 +18,11 @@ const walletTags = [
   'wallet_whitelist',
 ] as const
 
-const withdrawalWalletsTags = [
+export const withdrawalWalletsTags = [
   'withdrawal_wallets',
 ] as const
 
-const systemTags = [
+export const systemTags = [
   'system_version',
   'system_maintenance',
   'social_settings',
