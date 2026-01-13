@@ -36,7 +36,7 @@ export interface IGetOrdersQueryArgs extends IGetOrdersArgs {}
 export const marketsOrdersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getOrders: builder.query<IUserOrders, IGetOrdersQueryArgs>({
-      keepUnusedDataFor: 40,
+      keepUnusedDataFor: 0,
       queryFn: async (args, { getState, dispatch }): IQueryFuncResult<IUserOrders> => {
         const { symbol, status, startTime, endTime, limit, orderHistoryTab } = args;
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getOrders(symbol, status, limit, endTime, startTime));
@@ -65,10 +65,10 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
       providesTags: (result, error, { symbol, status }) => [
         { type: 'markets_orders', id: createValidatedTag([symbol, status]) }
       ],
-      async onCacheEntryAdded(args, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState, dispatch }) {
-        const { symbol, orderHistoryTab, limit } = args;
+      async onCacheEntryAdded({orderHistoryTab, symbol}, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState, dispatch }) {
+        // const { symbol, orderHistoryTab, limit } = args;
         let handlerId: number | null = null;
-        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ORDERS, STREAMS.TRADES], symbol);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ORDERS, STREAMS.TRADES], null);
         
         if (!subscribeOptions) {
           return;
@@ -83,7 +83,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
             }
             
             const currentState = getState() as any;
-            const listOfPairs = currentState.exchange.listOfPairs as IPair[];
+            // const listOfPairs = currentState.exchange.listOfPairs as IPair[];
             const currentPair = currentState.user.selectedPair as IPair;
             const finalOrderHistoryTab = orderHistoryTab || (currentState.exchange.openHistoryTab as OrderExecutionType);
             
@@ -98,16 +98,16 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
               });
 
               // Update global caches (All Pairs)
-              [OrderExecutionType.open, OrderExecutionType.close].forEach(tab => {
-                const globalArgs = { symbol: null, status: OrderExecution[tab], orderHistoryTab: tab, limit };
-                dispatch(marketsOrdersApi.util.updateQueryData('getOrders', globalArgs as any, (draft) => {
-                  const result = newTradeForOrderHandler(data, draft);
-                  if (result) {
-                    draft.open = result.open;
-                    draft.close = result.close;
-                  }
-                }));
-              });
+              // [OrderExecutionType.open, OrderExecutionType.close].forEach(tab => {
+              //   const globalArgs = { symbol: null, status: OrderExecution[tab], orderHistoryTab: tab, limit };
+              //   dispatch(marketsOrdersApi.util.updateQueryData('getOrders', globalArgs as any, (draft) => {
+              //     const result = newTradeForOrderHandler(data, draft);
+              //     if (result) {
+              //       draft.open = result.open;
+              //       draft.close = result.close;
+              //     }
+              //   }));
+              // });
 
               return;
             }
@@ -117,30 +117,30 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
             }
             
             const [[action, data]] = socketArgs;
-            const eventPairId = data[0];
-            const eventPair = listOfPairs.find(p => p.id === eventPairId);
+            // const eventPairId = data[0];
+            // const eventPair = listOfPairs.find(p => p.id === eventPairId);
 
-            if (!symbol || (eventPair && eventPair.pair_key === symbol)) {
+            // if (!symbol || (eventPair && eventPair.pair_key === symbol)) {
               updateCachedData((draft) => {
-                const result = handleSocketOrder(action, data, draft, finalOrderHistoryTab, eventPair || currentPair);
+                const result = handleSocketOrder(action, data, draft, finalOrderHistoryTab, currentPair);
                 if (result) {
                   draft.open = result.open;
                   draft.close = result.close;
                 }
               });
-            }
+            // }
 
             // Update global caches (All Pairs)
-            [OrderExecutionType.open, OrderExecutionType.close].forEach(tab => {
-              const globalArgs = { symbol: null, status: OrderExecution[tab], orderHistoryTab: tab, limit};
-              dispatch(marketsOrdersApi.util.updateQueryData('getOrders', globalArgs as any, (draft) => {
-                const result = handleSocketOrder(action, data, draft, tab, eventPair || currentPair);
-                if (result) {
-                  draft.open = result.open;
-                  draft.close = result.close;
-                }
-              }));
-            });
+            // [OrderExecutionType.open, OrderExecutionType.close].forEach(tab => {
+            //   const globalArgs = { symbol: null, status: OrderExecution[tab], orderHistoryTab: tab, limit};
+            //   dispatch(marketsOrdersApi.util.updateQueryData('getOrders', globalArgs as any, (draft) => {
+            //     const result = handleSocketOrder(action, data, draft, tab, eventPair || currentPair);
+            //     if (result) {
+            //       draft.open = result.open;
+            //       draft.close = result.close;
+            //     }
+            //   }));
+            // });
 
             const orderId = data[3];
             scheduleOrderBackgroundUpdate(action, orderId, updateCachedData);
@@ -149,15 +149,21 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
           console.error('Error loading cache data:', error);
         }
 
-        await Promise.all([cacheEntryRemoved, RtkSdkAdaptor.originalSdk.unsubscribeAsync(handlerId)]);
-
         const state = getState() as any;
         const selectedPair = state.user.selectedPair as IPair;
+        const orderFilter = state.persist.ordersFilter;
 
-        if(symbol === selectedPair?.pair_key) {
-          dispatch(marketsOrdersApi.endpoints.getOrders.initiate(args));
+        const computedSymbol = orderFilter === "CurrentPair" 
+        ? selectedPair?.pair_key
+        : null;
+
+        console.log('computedSymbol', computedSymbol, symbol);
+
+        if(symbol !== computedSymbol) {
+          await cacheEntryRemoved
+          await RtkSdkAdaptor.originalSdk.unsubscribeAsync(handlerId)
         }
-      },
+        }
     }),
     createSpotOrder: builder.mutation<IOrderDto, CreateSpotOrderArgs>({
       queryFn: async (data: CreateSpotOrderArgs): IQueryFuncResult<IOrderDto> => {
