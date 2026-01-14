@@ -42,7 +42,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getOrders(symbol, status, limit, endTime, startTime));
         
         if (!dataGuard(originResult)) {
-          return originResult;
+          return { data: initialUserOrdersState };
         }
 
         const state = getState() as any;
@@ -65,7 +65,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
       providesTags: (result, error, { symbol, status }) => [
         { type: 'markets_orders', id: createValidatedTag([symbol, status]) }
       ],
-      async onCacheEntryAdded({orderHistoryTab, symbol}, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState, dispatch }) {
+      async onCacheEntryAdded({orderHistoryTab, symbol}, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         // const { symbol, orderHistoryTab, limit } = args;
         let handlerId: number | null = null;
         const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ORDERS, STREAMS.TRADES], null);
@@ -76,6 +76,11 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
 
         try {
           await cacheDataLoaded;
+
+          // Check if cache was removed before data loaded
+          if (handlerId === null) {
+            return;
+          }
 
           handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, socketArgs: IOrdersSocketArgs) => {
             if(!socketArgs) {
@@ -149,19 +154,19 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
           console.error('Error loading cache data:', error);
         }
 
-        const state = getState() as any;
-        const selectedPair = state.user.selectedPair as IPair;
-        const orderFilter = state.persist.ordersFilter;
+        // const state = getState() as any;
+        // const selectedPair = state.user.selectedPair as IPair;
+        // const orderFilter = state.persist.ordersFilter;
 
-        const computedSymbol = orderFilter === "CurrentPair" 
-        ? selectedPair?.pair_key
-        : null;
+        // const computedSymbol = orderFilter === "CurrentPair" 
+        // ? selectedPair?.pair_key
+        // : null;
 
-        console.log('computedSymbol', computedSymbol, symbol);
+        // console.log('computedSymbol', computedSymbol, symbol);
 
-        if(symbol !== computedSymbol) {
-          await cacheEntryRemoved
-          await RtkSdkAdaptor.originalSdk.unsubscribeAsync(handlerId)
+        await cacheEntryRemoved;
+        if (handlerId !== null) {
+          await RtkSdkAdaptor.originalSdk.unsubscribeAsync(handlerId);
         }
         }
     }),

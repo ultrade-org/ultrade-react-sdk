@@ -25,14 +25,14 @@ export const marketsTradesApi = baseApi.injectEndpoints({
           return { data: initialTradesState };
         }
 
-        const { marketTrades, orderBook } = result;
+        // const { marketTrades, orderBook } = result;
 
-        dispatch({
-          type: 'exchange/SAVE_LTP',
-          data: orderBook,
-        });
+        // dispatch({
+        //   type: 'SAVE_LTP',
+        //   data: orderBook,
+        // });
 
-        return { data: { marketTrades } };
+        return { data: result };
       },
       providesTags: (result, error, { symbol }) => [{ type: 'markets_last_trades', id: symbol }],
       async onCacheEntryAdded({ symbol }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState, dispatch }) {
@@ -65,10 +65,10 @@ export const marketsTradesApi = baseApi.injectEndpoints({
 
             const chartTrade = saveChartTrade(lastTrade);
 
-            dispatch({
-              type: 'exchange/SAVE_CHART_TRADE',
-              data: chartTrade,
-            });
+            // dispatch({
+            //   type: 'SAVE_CHART_TRADE',
+            //   data: chartTrade,
+            // });
 
             updateCachedData((draft) => {
 
@@ -83,12 +83,10 @@ export const marketsTradesApi = baseApi.injectEndpoints({
               }
 
               const { marketTrades, orderBook } = result;
-              dispatch({
-                type: 'exchange/SAVE_LTP',
-                data: orderBook,
-              });
-              draft.marketTrades = marketTrades;
 
+              draft.marketTrades = marketTrades;
+              draft.orderBook = orderBook;
+              draft.chartTrade = chartTrade;
             });
           });
         } catch (error) {

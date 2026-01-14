@@ -31,7 +31,7 @@ export const walletApi = baseApi.injectEndpoints({
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getWalletTransactions(type, page, limit));
 
         if (!dataGuard(originResult)) {
-          return originResult;
+          return { data: initialWalletTransactionsState };
         }
 
         const prevWalletState = walletApi.endpoints.getWalletTransactions.select({ type, page, limit })(getState() as any).data || initialWalletTransactionsState;
@@ -93,7 +93,7 @@ export const walletApi = baseApi.injectEndpoints({
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getTransfers(page, limit));
 
         if (!dataGuard(originResult)) {
-          return originResult;
+          return { data: initialWalletTransferState };
         }
 
         const preparedResult = saveUserWalletTransfer(originResult.data.items);
@@ -149,8 +149,7 @@ export const walletApi = baseApi.injectEndpoints({
     }),
     transfer: builder.mutation<ITransfer, ITransferData>({
       queryFn: async (data: ITransferData): IQueryFuncResult<ITransfer> => {
-        const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.transfer(data));
-        return originResult;
+        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.transfer(data));
       },
       invalidatesTags: ['wallet_transfers'],
     }),

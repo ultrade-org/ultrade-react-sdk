@@ -40,15 +40,6 @@ export default class RtkSdkAdaptor extends Client {
     return RtkSdkAdaptor.instance;
   }
   static resetSdkState(dispatch: Dispatch): void {
-    const candidatesForReset = [
-      marketsOrdersApi,
-      marketsBalancesApi,
-      walletApi,
-      withdrawalWalletsApi
-    ]
-    candidatesForReset.forEach(api => {
-      dispatch(api.util.resetApiState());
-    });
     dispatch(baseApi.util.invalidateTags([...composedTags]));
   }
 }

@@ -21,7 +21,7 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getBalances());
         
         if (!dataGuard(originResult)) {
-          return originResult;
+          return { data: initialDepositBalanceState };
         }
         const state = getState() as any;
 
@@ -90,7 +90,7 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getCodexAssets());
         
         if (!dataGuard(originResult)) {
-          return originResult;
+          return { data: initialExchangeAssetsState };
         }
 
         return { data: saveExchangeAssetsHandler(originResult.data) };

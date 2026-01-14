@@ -24,7 +24,7 @@ export const marketsPairsApi = baseApi.injectEndpoints({
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getPairList(cachedSettings.companyId));
 
         if (!dataGuard(originResult)) {
-          return originResult;
+          return { data: initialPairListState };
         }
 
         const originalData = originResult.data;

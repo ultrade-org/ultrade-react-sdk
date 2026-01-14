@@ -1,14 +1,12 @@
 import moment from "moment";
 import { IChartTrade, IGetLastTrades, IMarketTrade, IOrderBook, LastTradeEvent } from "@ultrade/ultrade-js-sdk";
 import { MARKET_TRADES_SIZE } from "@ultrade/shared/browser/constants";
+
 import { sortByDate } from "../helpers";
+import { IGetLastTradesTransformedResult } from "@interface";
 
-interface SaveTradeHandlerResult {
-  orderBook: IOrderBook
-  marketTrades: IMarketTrade[];
-}
 
-export const saveLastTrades = (data: IGetLastTrades[]): SaveTradeHandlerResult => {
+export const saveLastTrades = (data: IGetLastTrades[]): IGetLastTradesTransformedResult => {
   if (!data || !Array.isArray(data) || data.length === 0) {
     return {
       orderBook: {
@@ -46,7 +44,7 @@ export const saveLastTrades = (data: IGetLastTrades[]): SaveTradeHandlerResult =
   };
 } 
 
-export const saveSocketTradeHandler = (prevMarketTrades: IMarketTrade[], data: LastTradeEvent): SaveTradeHandlerResult => {
+export const saveSocketTradeHandler = (prevMarketTrades: IMarketTrade[], data: LastTradeEvent): IGetLastTradesTransformedResult => {
   try {
     if (!data || !Array.isArray(data) || data.length < 8) {
       return {
