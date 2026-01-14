@@ -31,6 +31,8 @@ const orderSocketEventGuard = (event: string, args: IOrderSocketArgs | UserTrade
   return event === "userTrade";
 }
 
+const activeSubscriptions = new Set<number>();
+
 export interface IGetOrdersQueryArgs extends IGetOrdersArgs {}
 
 export const marketsOrdersApi = baseApi.injectEndpoints({
@@ -65,8 +67,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
       providesTags: (result, error, { symbol, status }) => [
         { type: 'markets_orders', id: createValidatedTag([symbol, status]) }
       ],
-      async onCacheEntryAdded({orderHistoryTab, symbol}, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
-        // const { symbol, orderHistoryTab, limit } = args;
+      async onCacheEntryAdded({orderHistoryTab, symbol}, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState, dispatch }) {
         let handlerId: number | null = null;
         const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ORDERS, STREAMS.TRADES], null);
         
@@ -77,18 +78,12 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
         try {
           await cacheDataLoaded;
 
-          // Check if cache was removed before data loaded
-          if (handlerId === null) {
-            return;
-          }
-
           handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, socketArgs: IOrdersSocketArgs) => {
             if(!socketArgs) {
               return;
             }
             
             const currentState = getState() as any;
-            // const listOfPairs = currentState.exchange.listOfPairs as IPair[];
             const currentPair = currentState.user.selectedPair as IPair;
             const finalOrderHistoryTab = orderHistoryTab || (currentState.exchange.openHistoryTab as OrderExecutionType);
             
@@ -101,19 +96,6 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
                   draft.close = result.close;
                 }
               });
-
-              // Update global caches (All Pairs)
-              // [OrderExecutionType.open, OrderExecutionType.close].forEach(tab => {
-              //   const globalArgs = { symbol: null, status: OrderExecution[tab], orderHistoryTab: tab, limit };
-              //   dispatch(marketsOrdersApi.util.updateQueryData('getOrders', globalArgs as any, (draft) => {
-              //     const result = newTradeForOrderHandler(data, draft);
-              //     if (result) {
-              //       draft.open = result.open;
-              //       draft.close = result.close;
-              //     }
-              //   }));
-              // });
-
               return;
             }
 
@@ -122,53 +104,38 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
             }
             
             const [[action, data]] = socketArgs;
-            // const eventPairId = data[0];
-            // const eventPair = listOfPairs.find(p => p.id === eventPairId);
-
-            // if (!symbol || (eventPair && eventPair.pair_key === symbol)) {
-              updateCachedData((draft) => {
-                const result = handleSocketOrder(action, data, draft, finalOrderHistoryTab, currentPair);
-                if (result) {
-                  draft.open = result.open;
-                  draft.close = result.close;
-                }
-              });
-            // }
-
-            // Update global caches (All Pairs)
-            // [OrderExecutionType.open, OrderExecutionType.close].forEach(tab => {
-            //   const globalArgs = { symbol: null, status: OrderExecution[tab], orderHistoryTab: tab, limit};
-            //   dispatch(marketsOrdersApi.util.updateQueryData('getOrders', globalArgs as any, (draft) => {
-            //     const result = handleSocketOrder(action, data, draft, tab, eventPair || currentPair);
-            //     if (result) {
-            //       draft.open = result.open;
-            //       draft.close = result.close;
-            //     }
-            //   }));
-            // });
+            updateCachedData((draft) => {
+              const result = handleSocketOrder(action, data, draft, finalOrderHistoryTab, currentPair);
+              if (result) {
+                draft.open = result.open;
+                draft.close = result.close;
+              }
+            });
 
             const orderId = data[3];
             scheduleOrderBackgroundUpdate(action, orderId, updateCachedData);
           });
+
+          if (handlerId !== null) {
+            activeSubscriptions.add(handlerId);
+          }
         } catch (error) {
           console.error('Error loading cache data:', error);
         }
 
-        // const state = getState() as any;
-        // const selectedPair = state.user.selectedPair as IPair;
-        // const orderFilter = state.persist.ordersFilter;
-
-        // const computedSymbol = orderFilter === "CurrentPair" 
-        // ? selectedPair?.pair_key
-        // : null;
-
-        // console.log('computedSymbol', computedSymbol, symbol);
-
         await cacheEntryRemoved;
-        if (handlerId !== null) {
+        
+        if (handlerId === null) {
+          return
+        }
+        
+        activeSubscriptions.delete(handlerId);
+        
+        if (activeSubscriptions.size === 0) {
           await RtkSdkAdaptor.originalSdk.unsubscribeAsync(handlerId);
         }
-        }
+        
+      }
     }),
     createSpotOrder: builder.mutation<IOrderDto, CreateSpotOrderArgs>({
       queryFn: async (data: CreateSpotOrderArgs): IQueryFuncResult<IOrderDto> => {
@@ -214,15 +181,33 @@ export {
 };
 
 export const useGetOrdersQuery = (args: IGetOrdersQueryArgs, options?: Record<string, unknown>) => {
+  const skip = options?.skip as boolean | undefined;
+  const externalSelectFromResult = options?.selectFromResult;
+  
   return useGetOrdersQueryBase(args as any, {
     ...options,
-    selectFromResult: (result) => ({
-      ...result,
-      data: result.data ? {
-        open: getAllOpenOrders(result.data.open),
-        close: getAllCloseOrders(result.data.close)
-      } : initialUserOrdersArrayState
-    })
+    selectFromResult: (result) => {
+      if (skip === true) {
+        return {
+          ...result,
+          data: initialUserOrdersArrayState,
+        };
+      }
+      
+      const transformedResult = {
+        ...result,
+        data: result.data ? {
+          open: getAllOpenOrders(result.data.open),
+          close: getAllCloseOrders(result.data.close)
+        } : initialUserOrdersArrayState
+      };
+      
+      if (externalSelectFromResult && typeof externalSelectFromResult === 'function') {
+        return externalSelectFromResult(transformedResult);
+      }
+      
+      return transformedResult;
+    }
   });
 };
 

@@ -40,6 +40,7 @@ export default class RtkSdkAdaptor extends Client {
     return RtkSdkAdaptor.instance;
   }
   static resetSdkState(dispatch: Dispatch): void {
-    dispatch(baseApi.util.invalidateTags([...composedTags]));
+    const tagsToInvalidate = composedTags.filter(tag => tag !== 'markets_pair_list');
+    dispatch(baseApi.util.invalidateTags(tagsToInvalidate));
   }
 }
