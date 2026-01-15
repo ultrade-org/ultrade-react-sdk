@@ -3,6 +3,7 @@ import { MaintenanceMode } from "@ultrade/shared/browser/enums";
 
 export interface ISystemVersionState {
   new_version: boolean;
+  serverVersion: string;
 }
 
 export interface IMaintenanceSocketData {

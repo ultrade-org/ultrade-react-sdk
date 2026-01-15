@@ -44,19 +44,11 @@ export const saveLastTrades = (data: IGetLastTrades[]): IGetLastTradesTransforme
   };
 } 
 
-export const saveSocketTradeHandler = (prevMarketTrades: IMarketTrade[], data: LastTradeEvent): IGetLastTradesTransformedResult => {
+export const saveSocketTradeHandler = (draft: IGetLastTradesTransformedResult, data: LastTradeEvent): void => {
   try {
     if (!data || !Array.isArray(data) || data.length < 8) {
-      return {
-        orderBook: {
-          currentLtp: "0",
-          lastLtp: "0",
-        },
-        marketTrades: prevMarketTrades || [],
-      };
+      return;
     }
-
-    const copyMarketTrades = [...(prevMarketTrades || [])];
 
     const [_1, _2, tradeId, price, amount, _6, date, isBuyerMaker] = data;
     const lastTrade: IMarketTrade = {
@@ -67,42 +59,31 @@ export const saveSocketTradeHandler = (prevMarketTrades: IMarketTrade[], data: L
       isBuyerMaker,
     }
 
-    let currentLtp = lastTrade.price;
+    draft.orderBook.currentLtp = lastTrade.price;
     let lastLtp = "0";
 
-    if (copyMarketTrades.length) {
-      lastLtp = copyMarketTrades[0].price;
+    if (draft.marketTrades.length) {
+      lastLtp = draft.marketTrades[0].price;
     } else {
       lastLtp = lastTrade.price;
     }
+    draft.orderBook.lastLtp = lastLtp;
 
-    const tradeIndex = copyMarketTrades.findIndex((item: IMarketTrade) => item.date <= lastTrade.date);
+    const tradeIndex = draft.marketTrades.findIndex((item: IMarketTrade) => item.date <= lastTrade.date);
     if (tradeIndex !== -1) {
-      copyMarketTrades.splice(tradeIndex, 0, lastTrade);
+      draft.marketTrades.splice(tradeIndex, 0, lastTrade);
     } else {
-      copyMarketTrades.push(lastTrade);
+      draft.marketTrades.push(lastTrade);
     }
 
-    if (copyMarketTrades.length > MARKET_TRADES_SIZE) {
-      copyMarketTrades.pop();
+    if (draft.marketTrades.length > MARKET_TRADES_SIZE) {
+      draft.marketTrades.pop();
     }
 
-    return {
-      orderBook: {
-        currentLtp,
-        lastLtp,
-      },
-      marketTrades: copyMarketTrades,
-    };
+    draft.chartTrade = saveChartTrade(data);
+    
   } catch (error) {
     console.error("saveTradeHandler error:", error);
-    return {
-      orderBook: {
-        currentLtp: "0",
-        lastLtp: "0",
-      },
-      marketTrades: prevMarketTrades || [],
-    };
   }
 };
 

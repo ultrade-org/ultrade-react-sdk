@@ -5,7 +5,10 @@ import { equalsIgnoreCase } from "@redux";
 
 export const systemVersionHandler = (fetchedVersion: string, packageVersion: string): ISystemVersionState => {
   const isVersionChanged = !equalsIgnoreCase(fetchedVersion, packageVersion);
-  return { new_version: isVersionChanged };
+  return { 
+    new_version: isVersionChanged,
+    serverVersion: fetchedVersion
+  };
 }
 
 export const systemMaintenanceHandler = ({ maintenance_mode, scheduledDate }: ISystemMaintenanceState): ISystemMaintenanceState => {

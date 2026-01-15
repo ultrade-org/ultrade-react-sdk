@@ -11,8 +11,8 @@ import { initialTradesState } from "@consts";
 export const marketsTradesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getLastTrades: builder.query<IGetLastTradesTransformedResult, IGetLastTradesArgs>({
-      keepUnusedDataFor: 30,
-      queryFn: async ({ symbol }: IGetLastTradesArgs, { getState, dispatch }): IQueryFuncResult<IGetLastTradesTransformedResult> => {
+      keepUnusedDataFor: 40,
+      queryFn: async ({ symbol }: IGetLastTradesArgs): IQueryFuncResult<IGetLastTradesTransformedResult> => {
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getLastTrades(symbol));
 
         if (!dataGuard(originResult)) {
@@ -38,7 +38,7 @@ export const marketsTradesApi = baseApi.injectEndpoints({
       async onCacheEntryAdded({ symbol }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState, dispatch }) {
         let handlerId: number | null = null;
         const state = getState() as any;
-        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ORDERS], symbol ? symbol : state.user.selectedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.TRADES], symbol ? symbol : state.user.selectedPair?.pair_key);
         
         if (!subscribeOptions) {
           return;
@@ -63,31 +63,34 @@ export const marketsTradesApi = baseApi.injectEndpoints({
               return;
             }
 
-            const chartTrade = saveChartTrade(lastTrade);
-
             // dispatch({
             //   type: 'SAVE_CHART_TRADE',
             //   data: chartTrade,
             // });
+            const eventPairSymbol = lastTrade[1];
 
-            updateCachedData((draft) => {
+            if (eventPairSymbol === symbol) {
 
+              updateCachedData((draft) => {
+
+                if(!draft) {
+                  return initialTradesState;
+                }
+  
+                saveSocketTradeHandler(draft, lastTrade);
+              });
+
+              return;
+            }
+
+            dispatch(marketsTradesApi.util.updateQueryData('getLastTrades', { symbol: eventPairSymbol }, (draft) => {
               if(!draft) {
-                return initialTradesState;
-              }
-
-              const result = saveSocketTradeHandler(draft.marketTrades, lastTrade);
-              
-              if (!result) {
                 return;
               }
 
-              const { marketTrades, orderBook } = result;
+              saveSocketTradeHandler(draft, lastTrade);
+            }));
 
-              draft.marketTrades = marketTrades;
-              draft.orderBook = orderBook;
-              draft.chartTrade = chartTrade;
-            });
           });
         } catch (error) {
           console.error('Error loading cache data:', error);
@@ -104,3 +107,17 @@ export const {
   useGetLastTradesQuery,
   useLazyGetLastTradesQuery,
 } = marketsTradesApi;
+
+// export {
+//   useLazyGetLastTradesQuery,
+// };
+
+// export const useGetLastTradesQuery = (
+//   args: IGetLastTradesArgs,
+//   options?: Parameters<typeof useGetLastTradesQueryBase>[1]
+// ) => {
+//   return useGetLastTradesQueryBase(args, {
+//     ...options,
+//     refetchOnMountOrArgChange: true,
+//   });
+// };

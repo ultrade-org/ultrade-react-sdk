@@ -31,9 +31,15 @@ export const systemApi = baseApi.injectEndpoints({
           return originResult;
         }
 
-        const preparedState = systemVersionHandler(originResult.data.version, packageVersion);
+        const serverVersion = originResult.data.version;
+        const preparedState = systemVersionHandler(serverVersion, packageVersion);
 
-        return { data: preparedState };
+        return { 
+          data: {
+            ...preparedState,
+            serverVersion
+          }
+        };
       },
       providesTags: ['system_version'],
 
@@ -59,14 +65,15 @@ export const systemApi = baseApi.injectEndpoints({
               return;
             }
 
-            const [version] = args;
-
+            const [serverVersion] = args;
+            
             updateCachedData((draft) => {
               if(!draft) {
                 return initialSystemVersionState;
               }
-              const preparedState = systemVersionHandler(version, packageVersion);
+              const preparedState = systemVersionHandler(serverVersion, packageVersion);
               draft.new_version = preparedState.new_version;
+              draft.serverVersion = preparedState.serverVersion;
             });
           });
         } catch (error) {

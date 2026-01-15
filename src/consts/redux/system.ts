@@ -4,6 +4,7 @@ import { ISystemMaintenanceState, ISystemNotificationsState, ISystemVersionState
 
 export const initialSystemVersionState: ISystemVersionState = {
   new_version: false,
+  serverVersion: '',
 }
 
 export const initialSystemMaintenanceState: ISystemMaintenanceState = {
