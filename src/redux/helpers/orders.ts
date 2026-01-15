@@ -249,6 +249,10 @@ export const scheduleOrderBackgroundUpdate = (
 ): void => {
   setTimeout(() => {
     updateCachedData((draft) => {
+      if (!draft || !draft.open || !draft.close) {
+        return;
+      }
+
       const order = getOpenOrderById(draft.open, orderId);
       
       if (!order) {
