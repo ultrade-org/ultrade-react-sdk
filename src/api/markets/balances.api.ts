@@ -134,60 +134,9 @@ export const marketsBalancesApi = baseApi.injectEndpoints({
   }),
 });
 
-const {
-  useGetBalancesQuery: useGetBalancesQueryBase,
-  useGetCodexAssetsQuery: useGetCodexAssetsQueryBase,
+export const {
+  useGetBalancesQuery,
+  useGetCodexAssetsQuery,
   useLazyGetBalancesQuery,
   useLazyGetCodexAssetsQuery,
 } = marketsBalancesApi;
-
-export {
-  useLazyGetBalancesQuery,
-  useLazyGetCodexAssetsQuery,
-};
-
-export const useGetBalancesQuery = (pairKey: IPair["pair_key"], options?: Record<string, unknown>) => {
-  const skip = options?.skip as boolean | undefined;
-  const externalSelectFromResult = options?.selectFromResult;
-  
-  return useGetBalancesQueryBase(pairKey, {
-    ...options,
-    selectFromResult: (result) => {
-      if (skip === true) {
-        return {
-          ...result,
-          data: initialDepositBalanceState,
-        };
-      }
-      
-      if (externalSelectFromResult && typeof externalSelectFromResult === 'function') {
-        return externalSelectFromResult(result);
-      }
-      
-      return result;
-    }
-  });
-};
-
-export const useGetCodexAssetsQuery = (args: void | undefined, options?: Record<string, unknown>) => {
-  const skip = options?.skip as boolean | undefined;
-  const externalSelectFromResult = options?.selectFromResult;
-  
-  return useGetCodexAssetsQueryBase(args, {
-    ...options,
-    selectFromResult: (result) => {
-      if (skip === true) {
-        return {
-          ...result,
-          data: initialExchangeAssetsState,
-        };
-      }
-      
-      if (externalSelectFromResult && typeof externalSelectFromResult === 'function') {
-        return externalSelectFromResult(result);
-      }
-      
-      return result;
-    }
-  });
-};

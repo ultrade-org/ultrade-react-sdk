@@ -3,9 +3,6 @@ import { Client, AuthCredentials, ClientOptions } from '@ultrade/ultrade-js-sdk'
 
 import { composedTags } from '@consts';
 import baseApi from './base.api';
-import { marketsBalancesApi, marketsOrdersApi } from './markets';
-import { walletApi } from './wallet.api';
-import { withdrawalWalletsApi } from './withdrawalWallets.api';
 
 export default class RtkSdkAdaptor extends Client {
 

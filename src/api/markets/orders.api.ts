@@ -203,19 +203,19 @@ export {
   useCancelMultipleOrdersMutation
 };
 
-export const useGetOrdersQuery = (args: IGetOrdersQueryArgs, options?: Record<string, unknown>) => {
+export const useGetOrdersQuery = (args: IGetOrdersQueryArgs, options?: Parameters<typeof useGetOrdersQueryBase>[1]) => {
   const skip = options?.skip as boolean | undefined;
   const externalSelectFromResult = options?.selectFromResult;
   
   return useGetOrdersQueryBase(args as any, {
     ...options,
     selectFromResult: (result) => {
-      if (skip === true) {
-        return {
-          ...result,
-          data: initialUserOrdersArrayState,
-        };
-      }
+      // if (skip === true) {
+      //   return {
+      //     ...result,
+      //     data: initialUserOrdersArrayState,
+      //   };
+      // }
       
       const transformedResult = {
         ...result,
@@ -224,10 +224,6 @@ export const useGetOrdersQuery = (args: IGetOrdersQueryArgs, options?: Record<st
           close: getAllCloseOrders(result.data.close)
         } : initialUserOrdersArrayState
       };
-      
-      if (externalSelectFromResult && typeof externalSelectFromResult === 'function') {
-        return externalSelectFromResult(transformedResult);
-      }
       
       return transformedResult;
     }
