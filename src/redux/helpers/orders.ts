@@ -5,6 +5,7 @@ import { amountValueFormate, equalsIgnoreCase, sortByDate } from './formaters';
 import { AddOrderEvent, IOrderDto, IPair, ITradeDto, Order, OrderExecutionType, OrderStatus, OrderTypeEnum, OrderUpdateStaus, UpdateOrderEvent } from '@ultrade/ultrade-js-sdk';
 import { IUserOrders } from '@interface';
 import { openOrdersAdapter, closeOrdersAdapter, getOpenOrderById, getCloseOrderById, openOrdersSelectors, closeOrdersSelectors } from '@redux';
+import { initialUserOrdersState } from '@consts';
 export interface IOrderSocketActionMap {
   add: AddOrderEvent;
   update: UpdateOrderEvent;
@@ -38,7 +39,11 @@ export const calculateOrder = (array: string[][], baseDecimal: number) =>
     return [arr[0], arr[1], amountValueFormate(BigNumber(arr[0]).multipliedBy(arr[1]).toString(), baseDecimal)];
   });
 
-export const saveNewOpenOrder = (data: AddOrderEvent, prevOrdersState: IUserOrders, currentPair?: IPair): IUserOrders => {
+export const saveNewOpenOrder = (data: AddOrderEvent, prevOrdersState?: IUserOrders, currentPair?: IPair): IUserOrders => {
+  if (!prevOrdersState) {
+    return initialUserOrdersState;
+  }
+  
   if (!currentPair) {
     return prevOrdersState;
   }
@@ -81,7 +86,12 @@ export const saveNewOpenOrder = (data: AddOrderEvent, prevOrdersState: IUserOrde
   return { ...prevOrdersState, open: updatedState };
 };
 
-export const updateOrderState = (data: UpdateOrderEvent, { open, close }: IUserOrders, openHistoryTab: OrderExecutionType ): IUserOrders | null => {
+export const updateOrderState = (data: UpdateOrderEvent, prevOrdersState?: IUserOrders, openHistoryTab?: OrderExecutionType ): IUserOrders | null => {
+  if (!prevOrdersState) {
+    return null;
+  }
+  
+  const { open, close } = prevOrdersState;
   const [ _pairId, _pairKey, _userId, id, status, executedPrice, filledAmount, filledTotal, _updatedAt, completedAt ] = data;
   
   const openOrder = getOpenOrderById(open, id);

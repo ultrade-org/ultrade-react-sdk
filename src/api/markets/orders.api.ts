@@ -10,8 +10,6 @@ import {
   ICancelMultipleOrdersResponse,
   STREAMS,
   IPair,
-  OrderExecutionType,
-  OrderExecution,
   UserTradeEvent,
 } from "@ultrade/ultrade-js-sdk";
 
@@ -31,13 +29,9 @@ const orderSocketEventGuard = (event: string, args: IOrderSocketArgs | UserTrade
   return event === "userTrade";
 }
 
-const activeSubscriptions = new Set<number>();
-
-export interface IGetOrdersQueryArgs extends IGetOrdersArgs {}
-
 export const marketsOrdersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getOrders: builder.query<IUserOrders, IGetOrdersQueryArgs>({
+    getOrders: builder.query<IUserOrders, IGetOrdersArgs>({
       keepUnusedDataFor: 0,
       queryFn: async (args, { getState, dispatch }): IQueryFuncResult<IUserOrders> => {
         const { symbol, status, startTime, endTime, limit, orderHistoryTab } = args;
@@ -92,6 +86,9 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
             if (orderSocketEventGuard(event, socketArgs[0])) {
               const data = socketArgs[0];
               updateCachedData((draft) => {
+                if (!draft) {
+                  return;
+                }
                 const result = newTradeForOrderHandler(data, draft);
                 if (result) {
                   draft.open = result.open;
@@ -102,7 +99,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
               // Update global caches (All Pairs)
               // [OrderExecutionType.open, OrderExecutionType.close].forEach(tab => {
                 
-              //   const globalArgs: IGetOrdersQueryArgs = { symbol: null, status: OrderExecution[tab], orderHistoryTab: tab, limit };
+              //   const globalArgs: IGetOrdersArgs = { symbol: null, status: OrderExecution[tab], orderHistoryTab: tab, limit };
 
               //   dispatch(marketsOrdersApi.util.updateQueryData('getOrders', globalArgs, (draft) => {
               //     const result = newTradeForOrderHandler(data, draft);
@@ -127,6 +124,9 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
 
             // if (!symbol || (eventPair && eventPair.pair_key === symbol)) {
               updateCachedData((draft) => {
+                if (!draft) {
+                  return;
+                }
                 const result = handleSocketOrder(action, data, draft, orderHistoryTab, currentPair);
                 if (result) {
                   draft.open = result.open;
@@ -137,7 +137,7 @@ export const marketsOrdersApi = baseApi.injectEndpoints({
 
             // Update global caches (All Pairs)
             // [OrderExecutionType.open, OrderExecutionType.close].forEach(tab => {
-            //   const globalArgs: IGetOrdersQueryArgs = { symbol: null, status: OrderExecution[tab], orderHistoryTab: tab, limit };
+            //   const globalArgs: IGetOrdersArgs = { symbol: null, status: OrderExecution[tab], orderHistoryTab: tab, limit };
 
             //   dispatch(marketsOrdersApi.util.updateQueryData('getOrders', globalArgs, (draft) => {
             //     const result = handleSocketOrder(action, data, draft, tab, eventPair || currentPair);
@@ -203,20 +203,10 @@ export {
   useCancelMultipleOrdersMutation
 };
 
-export const useGetOrdersQuery = (args: IGetOrdersQueryArgs, options?: Parameters<typeof useGetOrdersQueryBase>[1]) => {
-  const skip = options?.skip as boolean | undefined;
-  const externalSelectFromResult = options?.selectFromResult;
-  
-  return useGetOrdersQueryBase(args as any, {
+export const useGetOrdersQuery = (args: Parameters<typeof useGetOrdersQueryBase>[0], options?: Parameters<typeof useGetOrdersQueryBase>[1]) => {
+  return useGetOrdersQueryBase(args, {
     ...options,
     selectFromResult: (result) => {
-      // if (skip === true) {
-      //   return {
-      //     ...result,
-      //     data: initialUserOrdersArrayState,
-      //   };
-      // }
-      
       const transformedResult = {
         ...result,
         data: result.data ? {

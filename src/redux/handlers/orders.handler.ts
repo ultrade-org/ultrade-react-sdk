@@ -7,10 +7,14 @@ import { openOrdersAdapter, closeOrdersAdapter, getOpenOrderById, getCloseOrderB
 export const handleSocketOrder = <T extends keyof IOrderSocketActionMap>(
   action: T,
   data: IOrderSocketActionMap[T],
-  prevOrdersState: IUserOrders,
+  prevOrdersState: IUserOrders | undefined,
   openHistoryTab: OrderExecutionType,
   currentPair?: IPair
 ): IUserOrders | null => {
+  if (!prevOrdersState) {
+    return null;
+  }
+  
   switch (action) {
     case "add":
       return saveNewOpenOrder(data as AddOrderEvent, prevOrdersState, currentPair);
@@ -24,7 +28,11 @@ export const handleSocketOrder = <T extends keyof IOrderSocketActionMap>(
 /**
  * Update the order trades with socket
  */
-export const newTradeForOrderHandler = (data: UserTradeEvent, prevOrdersState: IUserOrders): IUserOrders | null => {
+export const newTradeForOrderHandler = (data: UserTradeEvent, prevOrdersState: IUserOrders | undefined): IUserOrders | null => {
+  if (!prevOrdersState) {
+    return null;
+  }
+
   const [_pairId, _coin, _userId, orderId, _isBuyer, _isMaker, tradeId, price, amount, total, createdAt, status, fee] = data;
 
   const trade: ITradeDto = {

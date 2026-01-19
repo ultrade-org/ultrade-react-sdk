@@ -1,7 +1,6 @@
 import { Dispatch } from '@reduxjs/toolkit';
 import { Client, AuthCredentials, ClientOptions } from '@ultrade/ultrade-js-sdk';
 
-import { composedTags } from '@consts';
 import baseApi from './base.api';
 
 export default class RtkSdkAdaptor extends Client {
@@ -37,7 +36,6 @@ export default class RtkSdkAdaptor extends Client {
     return RtkSdkAdaptor.instance;
   }
   static resetSdkState(dispatch: Dispatch): void {
-    // const tagsToInvalidate = composedTags.filter(tag => tag !== 'markets_pair_list' && tag !== 'markets_last_trades');
-    dispatch(baseApi.util.invalidateTags([...composedTags]));
+    dispatch(baseApi.util.resetApiState());
   }
 }
