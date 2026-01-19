@@ -34,13 +34,13 @@ export const pairHandler = ({
     if (selectedPair) selectedId = selectedPair.id;
   }
 
-  const pairsData = originalData.map((el) => {
+  const pairsData = availablePairs.map((el) => {
     const buildEl = buildPair(el, { minFee: cachedSettings?.minFee || 0 });
     const oldPair = prevList.find((p: IPair) => equalsIgnoreCase(p.pair_key, el.pair_key));
     return oldPair ? { ...oldPair, ...buildEl } : buildEl;
   });
 
-  const isMFT = originalData.some(
+  const isMFT = availablePairs.some(
     (el) => el.pairSettings[PairSettingsIds.MFT_AUDIO_LINK] || el.pairSettings[PairSettingsIds.MFT_TITLE],
   );
 

@@ -51,13 +51,20 @@ export const marketsPairsApi = baseApi.injectEndpoints({
 
         let handlerId: number | null = null;
         const preparedPair = state.user.selectedPair as IPair
+        const cachedSettings = marketsCommonApi.endpoints.getSettings.select()(state).data;
+
+        const companyId = cachedSettings?.companyId;
+        if (!companyId) {
+          return;
+        }
 
         const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.ALL_STAT], preparedPair?.pair_key);
-
 
         if (!subscribeOptions) {
           return;
         }
+
+        subscribeOptions.options.companyId = companyId;
 
         try {
           await cacheDataLoaded;
