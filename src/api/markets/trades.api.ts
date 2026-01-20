@@ -38,7 +38,7 @@ export const marketsTradesApi = baseApi.injectEndpoints({
       async onCacheEntryAdded({ symbol }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState, dispatch }) {
         let handlerId: number | null = null;
         const state = getState() as any;
-        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.TRADES], symbol ? symbol : state.user.selectedPair?.pair_key);
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.TRADES], symbol);
         
         if (!subscribeOptions) {
           return;

@@ -51,6 +51,13 @@ export const saveSocketTradeHandler = (draft: IGetLastTradesTransformedResult, d
     }
 
     const [_1, _2, tradeId, price, amount, _6, date, isBuyerMaker] = data;
+
+    // Check if this trade already exists (prevent duplicates from multiple subscriptions)
+    const existingTrade = draft.marketTrades.find((item: IMarketTrade) => item.tradeId === tradeId);
+    if (existingTrade) {
+      return;
+    }
+
     const lastTrade: IMarketTrade = {
       tradeId,
       price,
