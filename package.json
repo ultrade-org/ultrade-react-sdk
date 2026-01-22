@@ -6,7 +6,7 @@
   "main": "./dist/index.js",
   "types": "./dist/src/index.d.ts",
   "scripts": {
-    "build": "cross-env MODE=production ts-node esbuild.config.ts",
+    "build": "npx cross-env MODE=production ts-node esbuild.config.ts",
     "dev": "ts-node esbuild.config.ts",
     "version:update": "npm version patch --no-git-tag-version"
   },
