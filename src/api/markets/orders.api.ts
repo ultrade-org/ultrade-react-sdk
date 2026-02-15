@@ -15,10 +15,11 @@ import {
 
 import { IQueryFuncResult, createValidatedTag, dataGuard } from "@utils";
 import { withErrorHandling } from '@helpers';
-import baseApi from "../base.api";
+import baseApi from '@api/base.api';
 import RtkSdkAdaptor from "../sdk";
 import { IUserOrders, IUserOrdersArray } from "@interface";
-import { IOrderSocketActionMap, handleSocketOrder, newTradeForOrderHandler, saveUserOrders, scheduleOrderBackgroundUpdate, getAllOpenOrders, getAllCloseOrders } from "@redux";
+import { IOrderSocketActionMap, handleSocketOrder, newTradeForOrderHandler, saveUserOrders, scheduleOrderBackgroundUpdate } from "@redux";
+import { getAllOpenOrders, getAllCloseOrders } from "@redux/adapters";
 import { initialUserOrdersArrayState, initialUserOrdersState } from "@consts";
 
 type IOrderSocketAction = keyof IOrderSocketActionMap;

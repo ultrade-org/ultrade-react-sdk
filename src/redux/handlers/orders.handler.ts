@@ -2,7 +2,7 @@ import { AddOrderEvent, IPair, ITradeDto, Order, OrderExecutionType, OrderUpdate
 
 import { IUserOrders } from "@interface";
 import { updateOrderState, cancelOrder, IOrderSocketActionMap, saveNewOpenOrder, equalsIgnoreCase } from "../helpers";
-import { openOrdersAdapter, closeOrdersAdapter, getOpenOrderById, getCloseOrderById } from "@redux";
+import { openOrdersAdapter, closeOrdersAdapter, getOpenOrderById, getCloseOrderById } from '@redux/adapters';
 
 export const handleSocketOrder = <T extends keyof IOrderSocketActionMap>(
   action: T,

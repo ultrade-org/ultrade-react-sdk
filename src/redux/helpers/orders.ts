@@ -4,7 +4,7 @@ import { EntityState } from '@reduxjs/toolkit';
 import { amountValueFormate, equalsIgnoreCase, sortByDate } from './formaters';
 import { AddOrderEvent, IOrderDto, IPair, ITradeDto, Order, OrderExecutionType, OrderStatus, OrderTypeEnum, OrderUpdateStaus, UpdateOrderEvent } from '@ultrade/ultrade-js-sdk';
 import { IUserOrders } from '@interface';
-import { openOrdersAdapter, closeOrdersAdapter, getOpenOrderById, getCloseOrderById, openOrdersSelectors, closeOrdersSelectors } from '@redux';
+import { openOrdersAdapter, closeOrdersAdapter, getOpenOrderById, getCloseOrderById, openOrdersSelectors, closeOrdersSelectors } from '@redux/adapters';
 import { initialUserOrdersState } from '@consts';
 export interface IOrderSocketActionMap {
   add: AddOrderEvent;

@@ -1,7 +1,7 @@
 import { IGetHistoryArgs, IGetHistoryResponse } from "@ultrade/ultrade-js-sdk";
 
 import { IQueryFuncResult, createValidatedTag } from "@utils";
-import baseApi from "../base.api";
+import baseApi from '@api/base.api';
 import RtkSdkAdaptor from "../sdk";
 import { withErrorHandling } from '@helpers';
 

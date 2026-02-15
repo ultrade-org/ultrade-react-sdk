@@ -1,4 +1,4 @@
-import { baseApi } from "../api";
+import baseApi from '@api/base.api';
 
 export const SDKReducers = {
   [baseApi.reducerPath]: baseApi.reducer,

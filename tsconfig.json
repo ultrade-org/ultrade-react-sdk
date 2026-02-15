@@ -15,44 +15,50 @@
     "declaration": true,
     "declarationDir": "./dist",
     "emitDeclarationOnly": true,
-    "rootDir": ".",
-    "baseUrl": ".",
+    "rootDir": "./src",
+    "baseUrl": "./src",
     "outDir": "./dist",
     "types": [
       "node"
     ],
     "paths": {
-      "@helpers":[
-        "./src/helpers/index.ts"
+      "@helpers": [
+        "./helpers/index.ts"
       ],
       "@interface": [
-        "./src/interface/index.ts"
+        "./interface/index.ts"
       ],
       "@api": [
-        "./src/api/index.ts"
+        "./api/index.ts"
       ],
       "@assets": [
-        "./src/assets/index.ts"
+        "./assets/index.ts"
       ],
       "@api/*": [
-        "./src/api/*"
+        "./api/*"
       ],
       "@redux": [
-        "./src/redux/index.ts"
+        "./redux/index.ts"
       ],
       "@consts": [
-        "./src/consts/index.ts"
+        "./consts/index.ts"
       ],
       "@interfaces": [
-        "./src/interfaces/index.ts"
+        "./interfaces/index.ts"
       ],
       "@utils": [
-        "./src/utils/index.ts"
+        "./utils/index.ts"
+      ],
+      "@rtkTags": [
+        "./consts/rtkTags.ts"
+      ],
+      "@redux/adapters": [
+        "./redux/adapters/index.ts"
       ]
-    }
+    },
+    "declarationMap": false
   },
   "include": [
-    "src/**/*",
-    "esbuild.config.ts"
+    "src/**/*"
   ]
 }

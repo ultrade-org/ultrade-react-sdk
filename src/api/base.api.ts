@@ -1,8 +1,10 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 
-import { composedTags, RTK_REDUCER_PATH } from '@consts';
+import { composedTags } from '@rtkTags';
 
-export const baseApi = createApi({
+const RTK_REDUCER_PATH = 'sdk-rtk';
+
+const baseApi = createApi({
   reducerPath: RTK_REDUCER_PATH,
   baseQuery: () => {
     return {

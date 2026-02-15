@@ -1,7 +1,7 @@
 import { IGetLastTradesArgs, IGetLastTrades, STREAMS, LastTradeEvent, IPair } from "@ultrade/ultrade-js-sdk";
 
-import { IQueryFuncResult, dataGuard } from "@utils";
-import baseApi from "../base.api";
+import { IQueryFuncResult, createValidatedTag, dataGuard } from "@utils";
+import baseApi from '@api/base.api';
 import RtkSdkAdaptor from "../sdk";
 import { withErrorHandling } from '@helpers';
 import { IGetLastTradesTransformedResult } from "@interface";

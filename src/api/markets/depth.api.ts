@@ -1,7 +1,7 @@
 import { IGetDepth, IGetDepthArgs, IPair, STREAMS } from '@ultrade/ultrade-js-sdk';
 
 import { IQueryFuncResult, dataGuard } from '@utils';
-import baseApi from '../base.api';
+import baseApi from '@api/base.api';
 import RtkSdkAdaptor from "../sdk";
 import { IGetDepthTransformedResult } from '@interface';
 import { initialDepthState } from '@consts';

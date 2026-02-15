@@ -1,5 +1,5 @@
 import { IUserOrders, IUserOrdersArray } from "@interface";
-import { openOrdersAdapter, closeOrdersAdapter } from "@redux";
+import { openOrdersAdapter, closeOrdersAdapter } from "@redux/adapters";
 
 export const initialUserOrdersState: IUserOrders = {
   open: openOrdersAdapter.getInitialState(),

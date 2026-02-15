@@ -1,4 +1,4 @@
-import { baseApi } from "../api";
+import baseApi from '@api/base.api';
 
 export const SDKMiddlewares = [
   baseApi.middleware,

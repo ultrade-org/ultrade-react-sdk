@@ -1,7 +1,7 @@
-import { Dispatch } from '@reduxjs/toolkit';
+// import { Dispatch } from '@reduxjs/toolkit';
 import { Client, AuthCredentials, ClientOptions } from '@ultrade/ultrade-js-sdk';
 
-import baseApi from './base.api';
+import baseApi from '@api/base.api';
 
 export default class RtkSdkAdaptor extends Client {
 
@@ -35,7 +35,7 @@ export default class RtkSdkAdaptor extends Client {
     }
     return RtkSdkAdaptor.instance;
   }
-  static resetSdkState(dispatch: Dispatch): void {
+  static resetSdkState(dispatch): void {
     dispatch(baseApi.util.resetApiState());
   }
 }

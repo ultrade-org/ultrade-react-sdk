@@ -1,7 +1,7 @@
 import { createEntityAdapter } from "@reduxjs/toolkit";
 import { Order } from "@ultrade/ultrade-js-sdk";
 
-import { sortByDate } from "@redux";
+import { sortByDate } from '@redux';
 
 export const openOrdersAdapter = createEntityAdapter<Order>({
   selectId: (order) => order.id,

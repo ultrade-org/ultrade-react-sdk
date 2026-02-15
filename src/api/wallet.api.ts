@@ -15,7 +15,7 @@ import {
 } from "@ultrade/ultrade-js-sdk";
 import { ITransferData, PaginatedResult, TradingKeyView } from "@ultrade/shared/browser/interfaces";
 
-import baseApi from "./base.api";
+import baseApi from '@api/base.api';
 import { IQueryFuncResult, createValidatedTag, dataGuard } from "@utils";
 import RtkSdkAdaptor from "./sdk";
 import { withErrorHandling } from '@helpers';

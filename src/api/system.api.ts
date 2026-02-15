@@ -7,7 +7,7 @@ import {
 import { NotificationStatusEnum } from "@ultrade/shared/browser/enums";
 import { Notification } from "@ultrade/shared/browser/types";
 
-import baseApi from "./base.api";
+import baseApi from '@api/base.api';
 import { IQueryFuncResult, dataGuard } from "@utils";
 import RtkSdkAdaptor from "./sdk";
 import { withErrorHandling } from '@helpers';

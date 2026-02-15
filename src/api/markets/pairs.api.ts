@@ -1,24 +1,20 @@
-import { IGetPairListArgs, STREAMS, IPair, IPairDto } from '@ultrade/ultrade-js-sdk';
-
-import {
-  IQueryFuncResult,
-  createPairListTag,
-  dataGuard,
-} from '@utils';
-import baseApi from '../base.api';
+import { STREAMS, IPair, IPairDto } from '@ultrade/ultrade-js-sdk';
+import { IQueryFuncResult, dataGuard } from '@utils';
+import baseApi from '@api/base.api';
 import RtkSdkAdaptor from "../sdk";
 import { IGetPairListTransformedResult } from '@interface';
-import { marketsCommonApi } from './common.api';
+import { marketsCommonApi } from '@api/markets/common.api';
 import { withErrorHandling } from '@helpers';
 import { pairHandler } from '@redux';
 import { initialPairListState } from '@consts';
 
 export const marketsPairsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getPairList: builder.query<IGetPairListTransformedResult, IGetPairListArgs>({
+    getPairList: builder.query<IGetPairListTransformedResult, void>({
       keepUnusedDataFor: 180,
-      queryFn: async ({ selectedPairId }, { getState }): IQueryFuncResult<IGetPairListTransformedResult> => {
+      queryFn: async (_, { getState }): IQueryFuncResult<IGetPairListTransformedResult> => {
         const state = getState() as any;
+        const selectedPairId = state.user.selectedPair.id;
         const cachedSettings = marketsCommonApi.endpoints.getSettings.select()(state).data;
 
         const originResult = await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getPairList(cachedSettings.companyId));
@@ -33,7 +29,7 @@ export const marketsPairsApi = baseApi.injectEndpoints({
           return { data: initialPairListState };
         }
 
-        const prevPairListData = marketsPairsApi.endpoints.getPairList.select({selectedPairId})(state).data;
+        const prevPairListData = marketsPairsApi.endpoints.getPairList.select()(state).data;
 
         const listOfPairs = prevPairListData?.listOfPairs ?? []
         const preparedResult = pairHandler({
@@ -45,8 +41,8 @@ export const marketsPairsApi = baseApi.injectEndpoints({
 
         return { data: preparedResult }
       },
-      providesTags: (result, error, { selectedPairId }) => [{ type: 'markets_pair_list', id: selectedPairId }],
-      async onCacheEntryAdded({ selectedPairId }, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
+      providesTags: ['markets_pair_list'],
+      async onCacheEntryAdded(_, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
         const state = getState() as any;
 
         let handlerId: number | null = null;
@@ -87,13 +83,13 @@ export const marketsPairsApi = baseApi.injectEndpoints({
     
             const cachedSettings = marketsCommonApi.endpoints.getSettings.select()(state).data;
 
-            const prevPairListData = marketsPairsApi.endpoints.getPairList.select({selectedPairId})(state).data;
+            const prevPairListData = marketsPairsApi.endpoints.getPairList.select()(state).data;
       
             const preparedResult = pairHandler({
               originalData: socketData,
               cachedSettings,
               prevList: prevPairListData?.listOfPairs ?? [],
-              selectedPairId,
+              selectedPairId: preparedPair.id,
               messageId,
             });
 

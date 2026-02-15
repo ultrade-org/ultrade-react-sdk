@@ -4,7 +4,7 @@
   "description": "",
   "keywords": [],
   "main": "./dist/index.js",
-  "types": "./dist/src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "npx cross-env MODE=production ts-node esbuild.config.ts",
     "dev": "ts-node esbuild.config.ts",
