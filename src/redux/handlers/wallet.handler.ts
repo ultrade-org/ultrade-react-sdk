@@ -17,7 +17,7 @@ export const saveUserWalletTransfer = (data: ITransfer[]): IWalletTransferState 
 
 
 export const updateUserWalletTransactions = (newData: ITransaction, walletState: IWalletTransactionsState): IWalletTransactionsState => {
-  const txnType = newData.action_type;
+  const txnType = newData.action_type === ACTION_TYPE.F ? ACTION_TYPE.D : newData.action_type;
   const walletTransactions = walletState?.[txnType];
 
   if (!walletTransactions || !Array.isArray(walletTransactions)) {
