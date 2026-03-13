@@ -1,24 +1,24 @@
 import { AffDashboardVisibilitySettingEnum, ISettingsState, POINTS_SETTING } from "@ultrade/ultrade-js-sdk";
 
-interface ExtendedThemeObj {
-  logo: string;
-  name: string;
-  active: boolean;
-  value: Record<string, string>;
-  chartValue: Record<string, string>;
-}
+// interface ExtendedThemeObj {
+//   logo: string;
+//   name: string;
+//   active: boolean;
+//   value: Record<string, string>;
+//   chartValue: Record<string, string>;
+// }
 
-interface ExtendedSettingsState extends Omit<ISettingsState, 'theme1' | 'theme2' | 'theme3'> {
-  theme1: ExtendedThemeObj;
-  theme2: ExtendedThemeObj;
-  theme3: ExtendedThemeObj;
-}
+// interface ExtendedSettingsState extends Omit<ISettingsState, 'theme1' | 'theme2' | 'theme3'> {
+//   theme1: ExtendedThemeObj;
+//   theme2: ExtendedThemeObj;
+//   theme3: ExtendedThemeObj;
+// }
 
 // export const initialSettingsState: IGetSettingsTransformedResult = {
 //   currentTheme: 'theme1',
 // }
 
-export const initialSettingsState: ExtendedSettingsState = {
+export const initialSettingsState: ISettingsState = {
   isUltrade: false,
   companyId: null,
   currentCountry: "",

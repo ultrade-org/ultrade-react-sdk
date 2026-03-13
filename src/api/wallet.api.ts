@@ -1,6 +1,7 @@
 import {
   IGetWalletTransactionsArgs,
   IGetTransfersArgs,
+  IGetPendingActionsArgs,
   IAddWhitelistArgs,
   IDeleteWhitelistArgs,
   IAddTradingKeyArgs,
@@ -12,6 +13,7 @@ import {
   ITradingKey,
   IRevokeTradingKeyResponse,
   STREAMS,
+  ACTION_TYPE,
 } from "@ultrade/ultrade-js-sdk";
 import { ITransferData, PaginatedResult, TradingKeyView } from "@ultrade/shared/browser/interfaces";
 
@@ -19,8 +21,8 @@ import baseApi from '@api/base.api';
 import { IQueryFuncResult, createValidatedTag, dataGuard } from "@utils";
 import RtkSdkAdaptor from "./sdk";
 import { withErrorHandling } from '@helpers';
-import { IWalletTransactionsState, IWalletTransferState } from "@interface";
-import { saveUserWalletTransactions, saveUserWalletTransfer, updateTransferTransactions, updateUserWalletTransactions } from "@redux";
+import { IGetPendingTransactionsResult, IWalletTransactionsState, IWalletTransferState } from "@interface";
+import { isTxnDone, saveUserWalletTransactions, saveUserWalletTransfer, updateTransferTransactions, updateUserWalletTransactions } from "@redux";
 import {  initialWalletTransactionsState, initialWalletTransferState } from "@consts";
 
 export const walletApi = baseApi.injectEndpoints({
@@ -153,11 +155,110 @@ export const walletApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['wallet_transfers'],
     }),
-    getPendingTransactions: builder.query<IPendingTxn[], void>({
-      queryFn: async (): IQueryFuncResult<IPendingTxn[]> => {
-        return await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getPendingTransactions());
+    getPendingTransactions: builder.query<IGetPendingTransactionsResult, IGetPendingActionsArgs>({
+      queryFn: async (args): IQueryFuncResult<IGetPendingTransactionsResult> => {
+        const originResult =  await withErrorHandling(() => RtkSdkAdaptor.originalSdk.getPendingTransactions());
+
+        if (!dataGuard(originResult)) {
+          return { data: { 
+            pendingTxns: { deposit: [], withdraw: [], transfer: [] }, 
+            pendingCount: 0
+          } };
+        }
+
+        const pendingTxns = originResult.data.reduce((acc, el) => {
+          acc[el.type] 
+            ? acc[el.type].push(el) 
+            : acc[el.type] = [el];
+          return acc;
+        }, {});
+
+        const preparedResult = {
+          pendingTxns,
+          pendingCount: originResult.data.length,
+        };
+
+        return { data: preparedResult };
       },
       providesTags: ['wallet_pending_transactions'],
+      async onCacheEntryAdded(args, { updateCachedData, cacheDataLoaded, cacheEntryRemoved, getState }) {
+
+        let handlerId: number | null = null;
+        const state = getState() as any;
+        const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.WALLET_TRANSACTIONS], state.user.selectedPair?.pair_key);
+        
+        if (!subscribeOptions) {
+          return;
+        }
+
+        try {
+          await cacheDataLoaded;
+
+          handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [{ data: any}, string]) => {
+            if (event === "walletCancelTransaction") {
+              const [{ data }] = args;
+              const txnId = data.primaryId;
+              const type = data.action_type;
+              
+              updateCachedData((draft) => {
+                if (!draft || !draft.pendingTxns[type]) return;
+
+                const index = draft.pendingTxns[type].findIndex(t => t.id === txnId);
+                if (index !== -1) {
+                  draft.pendingTxns[type].splice(index, 1);
+                  draft.pendingCount = Math.max(0, draft.pendingCount - 1);
+                }
+              });
+              return;
+            }
+            
+            if (event !== "walletTransfer" && event !== "walletTransaction") {
+              return;
+            }
+
+            if (!args || !args.length) {
+              return;
+            }
+   
+            const [{data}] = args;
+
+            updateCachedData((draft) => {
+              if (!draft) return;
+              const type = event === "walletTransfer" ? ACTION_TYPE.T : data.action_type;
+              const txnId = event === "walletTransfer" ? data.transferId : data.primaryId;
+
+              const newTxn = {
+                type,
+                id: txnId,
+                amount: data.amount,
+                tokenId: data.token_id ? data.token_id.id : data.tokenId,
+              }
+
+              if (!draft.pendingTxns[type]) {
+                draft.pendingTxns[type] = [];
+              }
+
+              const oldTxn = draft.pendingTxns[type].find(t => t.id === newTxn.id);
+              console.log("update pending txns, old txn- ", oldTxn, newTxn);
+
+              if (!oldTxn && !isTxnDone(data.status)) {
+                draft.pendingCount += 1;
+                draft.pendingTxns[type].unshift(newTxn); 
+              }
+
+              if (oldTxn && isTxnDone(data.status)) {
+                draft.pendingCount = Math.max(0, draft.pendingCount - 1);
+                draft.pendingTxns[type] = draft.pendingTxns[type].filter(t => t.id !== txnId);
+              }
+            });
+          });
+        } catch (error) {
+          console.error('Error loading cache data:', error);
+        }
+
+        await cacheEntryRemoved;
+        RtkSdkAdaptor.originalSdk.unsubscribe(handlerId);
+      }
     }),
     getWhitelist: builder.query<PaginatedResult<IGetWhiteList>, void>({
       queryFn: async (): IQueryFuncResult<PaginatedResult<IGetWhiteList>> => {

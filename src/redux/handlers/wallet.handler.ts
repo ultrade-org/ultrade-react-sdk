@@ -2,6 +2,8 @@ import { ACTION_TYPE, ITransaction, ITransfer, OperationStatusEnum } from "@ultr
 import { equalsIgnoreCase } from "../helpers";
 import { IWalletTransactionsState, IWalletTransferState } from "@interface";
 
+export const isTxnDone = (status: OperationStatusEnum) => equalsIgnoreCase(status, OperationStatusEnum.Completed) || equalsIgnoreCase(status, OperationStatusEnum.Failed);
+
 export const saveUserWalletTransactions = (type: ACTION_TYPE, data: ITransaction[], prevWalletState: IWalletTransactionsState): IWalletTransactionsState => {
   return {
     ...prevWalletState,

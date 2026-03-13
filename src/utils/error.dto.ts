@@ -5,8 +5,12 @@ export class ErrorDto {
   };
   constructor(error: any) {
     this.error = {
-      status: error.response?.status,
-      data: error.response?.data || error.message,
+      status: error.response?.status || 'FETCH_ERROR',
+      data: error.response?.data || { 
+        message: error.shortMessage || error.details || String(error),
+        error: error.shortMessage || "Something went wrong",
+        statusCode: error.code || 'FETCH_ERROR'
+      },
     };
   }
 }

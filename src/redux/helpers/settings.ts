@@ -3,7 +3,7 @@ import { BOOLEAN_SETTINGS, JSON_ARRAY_SETTINGS } from "@ultrade/shared/browser/c
 
 import { convertJsonToArray } from "./formaters";
 import { adjustFee, convertSettingToBoolean } from "./formaters";
-import { ThemeObj } from "@ultrade/shared/browser/types";
+import { DbThemeObj } from "@ultrade/shared/browser/types";
 
 export const buildSettings = (data: SettingsInit): ISettingsState  => {
   const settings = Object.entries(data).reduce((acc, [key, value]) => {
@@ -33,7 +33,7 @@ export const buildSettings = (data: SettingsInit): ISettingsState  => {
 
       const allThemes = Object.entries(themes).reduce((acc, [themeId, themeValue]) => {
         acc[themeId] = {
-          ...(themeValue as ThemeObj),
+          ...(themeValue as DbThemeObj),
           logo: logos[themeId].value
         }
         return acc;

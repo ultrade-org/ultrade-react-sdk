@@ -1,4 +1,4 @@
-import { IWalletTransactionsState, IWalletTransferState } from "@interface";
+import { IGetPendingTransactionsResult, IWalletTransactionsState, IWalletTransferState } from "@interface";
 
 export const initialWalletTransactionsState: IWalletTransactionsState = {
   deposit: [],
@@ -8,3 +8,8 @@ export const initialWalletTransactionsState: IWalletTransactionsState = {
 export const initialWalletTransferState: IWalletTransferState = {
   transfer: [],
 }
+
+export const initialPendingState: IGetPendingTransactionsResult = { 
+  pendingTxns: { deposit: [], withdraw: [], transfer: [] }, 
+  pendingCount: 0
+};
