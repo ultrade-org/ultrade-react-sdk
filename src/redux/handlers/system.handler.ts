@@ -1,12 +1,11 @@
 import { IPendingTxn, ISocialSettings } from "@ultrade/ultrade-js-sdk";
 
 import { ISystemMaintenanceState, ISystemVersionState } from "@interface"
-import { equalsIgnoreCase } from "@redux";
+import { isServerVersionNewer } from "@redux";
 
 export const systemVersionHandler = (fetchedVersion: string, packageVersion: string): ISystemVersionState => {
-  const isVersionChanged = !equalsIgnoreCase(fetchedVersion, packageVersion);
-  return { 
-    new_version: isVersionChanged,
+  return {
+    new_version: isServerVersionNewer(fetchedVersion, packageVersion),
     serverVersion: fetchedVersion
   };
 }

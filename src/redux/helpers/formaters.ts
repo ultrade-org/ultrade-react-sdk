@@ -14,6 +14,16 @@ export function equalsIgnoreCase(str1: string | number, str2: string | number) {
   return String(str1).toUpperCase() === String(str2).toUpperCase();
 }
 
+export function isServerVersionNewer(serverVersion: string, clientVersion: string): boolean {
+  if (!serverVersion || !clientVersion) return false;
+  const parts = (v: string) => v.split('.').map(Number);
+  const [sMaj = 0, sMin = 0, sPatch = 0] = parts(serverVersion);
+  const [cMaj = 0, cMin = 0, cPatch = 0] = parts(clientVersion);
+  if (sMaj !== cMaj) return sMaj > cMaj;
+  if (sMin !== cMin) return sMin > cMin;
+  return sPatch > cPatch;
+}
+
 export const convertJsonToArray = (setting: string | null) => {
   return JSON.parse(setting ?? '[]');
 };
