@@ -25,6 +25,18 @@ import { IGetPendingTransactionsResult, IWalletTransactionsState, IWalletTransfe
 import { isTxnDone, saveUserWalletTransactions, saveUserWalletTransfer, updateTransferTransactions, updateUserWalletTransactions } from "@redux";
 import {  initialWalletTransactionsState, initialWalletTransferState } from "@consts";
 
+const WAIT_FOR_AUTH_INTERVAL_MS = 100;
+const WAIT_FOR_AUTH_MAX_ATTEMPTS = 50;
+
+const waitForWalletAuth = async (): Promise<boolean> => {
+  for (let i = 0; i < WAIT_FOR_AUTH_MAX_ATTEMPTS; i++) {
+    const wallet = RtkSdkAdaptor.originalSdk.mainWallet;
+    if (wallet?.token || wallet?.tradingKey) return true;
+    await new Promise(resolve => setTimeout(resolve, WAIT_FOR_AUTH_INTERVAL_MS));
+  }
+  return false;
+};
+
 export const walletApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getWalletTransactions: builder.query<IWalletTransactionsState, IGetWalletTransactionsArgs>({
@@ -56,6 +68,10 @@ export const walletApi = baseApi.injectEndpoints({
 
         try {
           await cacheDataLoaded;
+
+          if (!(await waitForWalletAuth())) return;
+
+          const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.WALLET_TRANSACTIONS]);
 
           handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [{data: ITransaction}, string]) => {
             if(event !== "allStat" && event !== "depth"){
@@ -116,6 +132,10 @@ export const walletApi = baseApi.injectEndpoints({
 
         try {
           await cacheDataLoaded;
+
+          if (!(await waitForWalletAuth())) return;
+
+          const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.WALLET_TRANSACTIONS]);
 
           handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [{ data: ITransfer}, string]) => {
 
@@ -193,6 +213,10 @@ export const walletApi = baseApi.injectEndpoints({
 
         try {
           await cacheDataLoaded;
+
+          if (!(await waitForWalletAuth())) return;
+
+          const subscribeOptions = RtkSdkAdaptor.originalSdk.getSocketSubscribeOptions([STREAMS.WALLET_TRANSACTIONS]);
 
           handlerId = RtkSdkAdaptor.originalSdk.subscribe(subscribeOptions, (event, args: [{ data: any}, string]) => {
             if (event === "walletCancelTransaction") {
